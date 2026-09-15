@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Convertir les images
+GenericName=Convertisseur d'images pour Nautilus
+Comment=Conversion d'images RAW/JPEG/PNG/TIFF/BMP/WebP sans perte
+Exec=convert-images-gui %U
+Terminal=false
+Categories=Graphics;Photography;Utility;
+NoDisplay=false

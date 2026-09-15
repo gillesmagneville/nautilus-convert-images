@@ -1,0 +1,442 @@
+#!/usr/bin/env python3
+"""
+convert-images-gui — interface graphique GTK4 autonome pour nautilus-convert-images.
+
+Lancée par l'extension Nautilus (ou manuellement) avec une liste de
+fichiers/dossiers sélectionnés, cette application :
+  1. détecte le format de toutes les images trouvées (récursivement dans
+     les dossiers sélectionnés), en déléguant au moteur `convert-images-engine` ;
+  2. propose un format de destination, une qualité (JPEG), un dossier de
+     sortie (avec création de nouveau dossier) et une politique en cas de
+     collision de noms ;
+  3. lance la conversion via `convert-images-engine` et affiche la progression
+     en temps réel, sans jamais recadrer ni redimensionner les images.
+"""
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gio, GLib, Gtk  # noqa: E402
+
+ENGINE_BINARY = "/usr/bin/convert-images-engine"
+
+FORMAT_CHOICES = [
+    ("jpeg", "JPEG (avec perte, qualité réglable)"),
+    ("png", "PNG (sans perte)"),
+    ("tiff", "TIFF non compressé (sans perte)"),
+    ("bmp", "BMP (sans perte)"),
+    ("webp", "WebP sans perte"),
+]
+
+COLLISION_CHOICES = [
+    ("rename", "Renommer le nouveau fichier"),
+    ("skip", "Ignorer le fichier"),
+    ("overwrite", "Remplacer le fichier existant"),
+]
+
+
+def read_path_list(list_file):
+    paths = []
+    with open(list_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                paths.append(line)
+    return paths
+
+
+def common_parent_dir(paths):
+    dirs = []
+    for p in paths:
+        dirs.append(p if os.path.isdir(p) else os.path.dirname(p))
+    if not dirs:
+        return os.path.expanduser("~")
+    try:
+        return os.path.commonpath(dirs)
+    except ValueError:
+        return os.path.dirname(dirs[0]) or os.path.expanduser("~")
+
+
+class NewFolderDialog(Gtk.Window):
+    """Petite fenêtre modale pour saisir le nom d'un nouveau dossier."""
+
+    def __init__(self, parent, parent_dir, on_created):
+        super().__init__(title="Nouveau dossier", transient_for=parent, modal=True)
+        self.set_default_size(360, -1)
+        self.parent_dir = parent_dir
+        self.on_created = on_created
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_margin_top(16)
+        box.set_margin_bottom(16)
+        box.set_margin_start(16)
+        box.set_margin_end(16)
+        self.set_child(box)
+
+        box.append(Gtk.Label(label=f"Créer dans : {parent_dir}", xalign=0))
+
+        self.entry = Gtk.Entry()
+        self.entry.set_placeholder_text("Nom du dossier")
+        self.entry.set_text("converti")
+        box.append(self.entry)
+
+        self.error_label = Gtk.Label(label="", xalign=0)
+        self.error_label.add_css_class("error")
+        box.append(self.error_label)
+
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        btn_box.set_halign(Gtk.Align.END)
+        cancel_btn = Gtk.Button(label="Annuler")
+        cancel_btn.connect("clicked", lambda _b: self.close())
+        create_btn = Gtk.Button(label="Créer")
+        create_btn.add_css_class("suggested-action")
+        create_btn.connect("clicked", self._on_create)
+        btn_box.append(cancel_btn)
+        btn_box.append(create_btn)
+        box.append(btn_box)
+
+        self.entry.connect("activate", self._on_create)
+
+    def _on_create(self, _widget):
+        name = self.entry.get_text().strip()
+        if not name:
+            self.error_label.set_text("Le nom ne peut pas être vide.")
+            return
+        new_path = os.path.join(self.parent_dir, name)
+        try:
+            os.makedirs(new_path, exist_ok=True)
+        except OSError as e:
+            self.error_label.set_text(f"Impossible de créer le dossier : {e}")
+            return
+        self.on_created(new_path)
+        self.close()
+
+
+class ConvertImagesWindow(Gtk.ApplicationWindow):
+    def __init__(self, app, input_paths):
+        super().__init__(application=app, title="Convertir les images")
+        self.set_default_size(560, 640)
+        self.input_paths = input_paths
+        self.detected_files = []  # liste de (path, format_label, is_raw)
+        self.output_dir = common_parent_dir(input_paths)
+        self.convert_proc = None
+
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        root.set_margin_top(16)
+        root.set_margin_bottom(16)
+        root.set_margin_start(16)
+        root.set_margin_end(16)
+        self.set_child(root)
+
+        self.status_label = Gtk.Label(label="Analyse des fichiers sélectionnés…", xalign=0)
+        self.status_label.set_wrap(True)
+        root.append(self.status_label)
+
+        self.detect_progress = Gtk.ProgressBar()
+        self.detect_progress.set_show_text(False)
+        root.append(self.detect_progress)
+
+        # --- Options de conversion (masquées jusqu'à la fin de l'analyse) ---
+        self.options_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.options_box.set_visible(False)
+        root.append(self.options_box)
+
+        grid = Gtk.Grid(row_spacing=8, column_spacing=12)
+        self.options_box.append(grid)
+
+        grid.attach(Gtk.Label(label="Format de destination :", xalign=0), 0, 0, 1, 1)
+        self.format_dropdown = Gtk.DropDown.new_from_strings(
+            [label for _id, label in FORMAT_CHOICES]
+        )
+        self.format_dropdown.set_selected(1)  # PNG par défaut (sans perte)
+        self.format_dropdown.connect("notify::selected", self._on_format_changed)
+        grid.attach(self.format_dropdown, 1, 0, 1, 1)
+
+        self.quality_label = Gtk.Label(label="Qualité JPEG :", xalign=0)
+        grid.attach(self.quality_label, 0, 1, 1, 1)
+        self.quality_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 1, 100, 1)
+        self.quality_scale.set_value(100)
+        self.quality_scale.set_hexpand(True)
+        self.quality_scale.set_digits(0)
+        grid.attach(self.quality_scale, 1, 1, 1, 1)
+
+        grid.attach(Gtk.Label(label="En cas de fichier existant :", xalign=0), 0, 2, 1, 1)
+        self.collision_dropdown = Gtk.DropDown.new_from_strings(
+            [label for _id, label in COLLISION_CHOICES]
+        )
+        self.collision_dropdown.set_selected(0)
+        grid.attach(self.collision_dropdown, 1, 2, 1, 1)
+
+        grid.attach(Gtk.Label(label="Dossier de destination :", xalign=0), 0, 3, 1, 1)
+        dest_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.dest_label = Gtk.Label(label=self.output_dir, xalign=0)
+        self.dest_label.set_ellipsize(3)  # PANGO_ELLIPSIZE_END
+        self.dest_label.set_hexpand(True)
+        dest_box.append(self.dest_label)
+        browse_btn = Gtk.Button(label="Parcourir…")
+        browse_btn.connect("clicked", self._on_browse_clicked)
+        dest_box.append(browse_btn)
+        new_folder_btn = Gtk.Button(label="Nouveau dossier…")
+        new_folder_btn.connect("clicked", self._on_new_folder_clicked)
+        dest_box.append(new_folder_btn)
+        grid.attach(dest_box, 1, 3, 1, 1)
+
+        self._on_format_changed(self.format_dropdown, None)
+
+        # --- Bouton de conversion ---
+        action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        action_box.set_halign(Gtk.Align.END)
+        self.cancel_btn = Gtk.Button(label="Annuler la conversion")
+        self.cancel_btn.set_visible(False)
+        self.cancel_btn.connect("clicked", self._on_cancel_clicked)
+        action_box.append(self.cancel_btn)
+        self.convert_btn = Gtk.Button(label="Convertir")
+        self.convert_btn.add_css_class("suggested-action")
+        self.convert_btn.connect("clicked", self._on_convert_clicked)
+        action_box.append(self.convert_btn)
+        self.options_box.append(action_box)
+
+        self.convert_progress = Gtk.ProgressBar()
+        self.convert_progress.set_visible(False)
+        self.options_box.append(self.convert_progress)
+
+        # --- Journal ---
+        self.log_buffer = Gtk.TextBuffer()
+        log_view = Gtk.TextView(buffer=self.log_buffer, editable=False, monospace=True)
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_vexpand(True)
+        scroller.set_child(log_view)
+        scroller.set_visible(False)
+        self.log_scroller = scroller
+        root.append(scroller)
+
+        self.open_dest_btn = Gtk.Button(label="Ouvrir le dossier de destination")
+        self.open_dest_btn.set_visible(False)
+        self.open_dest_btn.connect("clicked", self._on_open_dest_clicked)
+        root.append(self.open_dest_btn)
+
+        self._start_detection()
+
+    # ---------------------------------------------------------------- detect
+
+    def _start_detection(self):
+        args = [ENGINE_BINARY, "detect", "--recursive"] + self.input_paths
+        self._run_streaming(args, self._on_detect_line, self._on_detect_done)
+
+    def _on_detect_line(self, event):
+        kind = event.get("event")
+        if kind == "file":
+            self.detected_files.append(
+                (event["path"], event["format"], event.get("is_raw", False))
+            )
+        elif kind == "summary":
+            counts = event.get("counts", {})
+            total = event.get("total", 0)
+            if total == 0:
+                self.status_label.set_text(
+                    "Aucun fichier image reconnu dans la sélection."
+                )
+            else:
+                details = ", ".join(f"{n} {fmt}" for fmt, n in sorted(counts.items()))
+                self.status_label.set_text(f"{total} fichier(s) détecté(s) : {details}")
+
+    def _on_detect_done(self, success, _returncode):
+        self.detect_progress.set_visible(False)
+        if not self.detected_files:
+            self.convert_btn.set_sensitive(False)
+        self.options_box.set_visible(True)
+
+    # ------------------------------------------------------------- options
+
+    def _on_format_changed(self, dropdown, _pspec):
+        idx = dropdown.get_selected()
+        fmt_id, _label = FORMAT_CHOICES[idx]
+        is_jpeg = fmt_id == "jpeg"
+        self.quality_label.set_visible(is_jpeg)
+        self.quality_scale.set_visible(is_jpeg)
+
+    def _on_browse_clicked(self, _btn):
+        dialog = Gtk.FileDialog()
+        dialog.set_title("Choisir le dossier de destination")
+        initial = Gio.File.new_for_path(self.output_dir)
+        dialog.set_initial_folder(initial)
+
+        def on_response(dlg, result):
+            try:
+                folder = dlg.select_folder_finish(result)
+            except GLib.Error:
+                return
+            if folder:
+                self.output_dir = folder.get_path()
+                self.dest_label.set_text(self.output_dir)
+
+        dialog.select_folder(self, None, on_response)
+
+    def _on_new_folder_clicked(self, _btn):
+        def on_created(new_path):
+            self.output_dir = new_path
+            self.dest_label.set_text(self.output_dir)
+
+        dlg = NewFolderDialog(self, self.output_dir, on_created)
+        dlg.present()
+
+    # ------------------------------------------------------------- convert
+
+    def _on_convert_clicked(self, _btn):
+        idx = self.format_dropdown.get_selected()
+        fmt_id, _label = FORMAT_CHOICES[idx]
+        collision_idx = self.collision_dropdown.get_selected()
+        collision_id, _clabel = COLLISION_CHOICES[collision_idx]
+        quality = int(self.quality_scale.get_value())
+
+        os.makedirs(self.output_dir, exist_ok=True)
+
+        args = [
+            ENGINE_BINARY,
+            "convert",
+            "--recursive",
+            "--output-dir",
+            self.output_dir,
+            "--format",
+            fmt_id,
+            "--quality",
+            str(quality),
+            "--on-collision",
+            collision_id,
+        ] + self.input_paths
+
+        self.convert_btn.set_sensitive(False)
+        self.cancel_btn.set_visible(True)
+        self.convert_progress.set_visible(True)
+        self.convert_progress.set_fraction(0.0)
+        self.log_scroller.set_visible(True)
+        self.log_buffer.set_text("")
+        self._append_log(f"Conversion vers {fmt_id.upper()} → {self.output_dir}\n")
+
+        self._run_streaming(args, self._on_convert_line, self._on_convert_done)
+
+    def _on_convert_line(self, event):
+        kind = event.get("event")
+        if kind == "start":
+            self._convert_total = event.get("total", 0) or 1
+        elif kind == "file_done":
+            idx = event.get("index", 0)
+            total = event.get("total", self._convert_total)
+            self.convert_progress.set_fraction(min(1.0, idx / max(1, total)))
+            if event.get("status") == "ok":
+                self._append_log(f"[OK] {event.get('input')} → {event.get('output')}\n")
+            else:
+                self._append_log(
+                    f"[ERREUR] {event.get('input')} : {event.get('message')}\n"
+                )
+        elif kind == "summary":
+            ok = event.get("ok", 0)
+            errors = event.get("errors", 0)
+            self._append_log(f"\nTerminé : {ok} réussite(s), {errors} erreur(s).\n")
+            self.status_label.set_text(f"Conversion terminée : {ok} réussite(s), {errors} erreur(s).")
+        elif kind == "fatal_error":
+            self._append_log(f"[ERREUR FATALE] {event.get('message')}\n")
+
+    def _on_convert_done(self, success, _returncode):
+        self.convert_btn.set_sensitive(True)
+        self.cancel_btn.set_visible(False)
+        self.open_dest_btn.set_visible(True)
+
+    def _on_cancel_clicked(self, _btn):
+        if self.convert_proc:
+            self.convert_proc.force_exit()
+        self._append_log("\nConversion annulée par l'utilisateur.\n")
+
+    def _on_open_dest_clicked(self, _btn):
+        uri = GLib.filename_to_uri(self.output_dir, None)
+        Gio.AppInfo.launch_default_for_uri(uri, None)
+
+    # ------------------------------------------------------------- helpers
+
+    def _append_log(self, text):
+        end = self.log_buffer.get_end_iter()
+        self.log_buffer.insert(end, text)
+
+    def _run_streaming(self, args, on_line, on_done):
+        """Lance `args` en sous-processus et appelle `on_line(dict_json)`
+        pour chaque ligne JSON reçue sur stdout, puis `on_done(success, code)`
+        à la fin, sans jamais bloquer la boucle GTK."""
+        try:
+            proc = Gio.Subprocess.new(
+                args, Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE
+            )
+        except GLib.Error as e:
+            self._append_log(f"[ERREUR] impossible de lancer le moteur : {e}\n")
+            on_done(False, -1)
+            return
+
+        self.convert_proc = proc
+        stdout = proc.get_stdout_pipe()
+        stream = Gio.DataInputStream.new(stdout)
+
+        def read_next():
+            stream.read_line_async(GLib.PRIORITY_DEFAULT, None, on_read)
+
+        def on_read(source, result):
+            try:
+                line, _len = source.read_line_finish_utf8(result)
+            except GLib.Error:
+                line = None
+            if line is None:
+                proc.wait_check_async(None, on_wait)
+                return
+            line = line.strip()
+            if line:
+                try:
+                    event = json.loads(line)
+                    on_line(event)
+                except json.JSONDecodeError:
+                    pass
+            read_next()
+
+        def on_wait(source, result):
+            try:
+                source.wait_check_finish(result)
+                on_done(True, 0)
+            except GLib.Error:
+                on_done(False, source.get_exit_status())
+
+        read_next()
+
+
+class ConvertImagesApp(Gtk.Application):
+    def __init__(self, input_paths):
+        super().__init__(application_id="org.gillesmagneville.ConvertImages")
+        self.input_paths = input_paths
+
+    def do_activate(self):
+        win = ConvertImagesWindow(self, self.input_paths)
+        win.present()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Interface graphique nautilus-convert-images")
+    parser.add_argument("--input-list", help="Fichier contenant un chemin par ligne")
+    parser.add_argument("paths", nargs="*", help="Fichiers ou dossiers à traiter")
+    args = parser.parse_args()
+
+    input_paths = list(args.paths)
+    if args.input_list:
+        input_paths.extend(read_path_list(args.input_list))
+
+    if not input_paths:
+        print("Aucun fichier ou dossier fourni.", file=sys.stderr)
+        sys.exit(1)
+
+    app = ConvertImagesApp(input_paths)
+    app.run([])
+
+
+if __name__ == "__main__":
+    main()

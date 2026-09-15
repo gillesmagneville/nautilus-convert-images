@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+# Redémarre Nautilus s'il est en cours d'exécution, pour qu'il recharge
+# la liste des extensions Python et prenne en compte
+# nautilus-convert-images immédiatement (sinon, l'entrée de menu
+# n'apparaît qu'à la prochaine ouverture de session).
+if command -v nautilus >/dev/null 2>&1; then
+    if pgrep -x nautilus >/dev/null 2>&1; then
+        nautilus -q >/dev/null 2>&1 || true
+        echo "nautilus-convert-images : Nautilus a été redémarré pour activer la nouvelle entrée de menu."
+    fi
+fi
+
+exit 0
