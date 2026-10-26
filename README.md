@@ -10,7 +10,7 @@ formats, points d'extension).
 
 ## Status
 
-Version scaffold v1, fonctionnelle de bout en bout :
+Version stable, fonctionnelle de bout en bout :
 
 * **Détection de format** — JPEG, PNG, TIFF, BMP, GIF, WebP par extension
   puis, en repli, par analyse du contenu du fichier ; large gamme de
@@ -160,9 +160,8 @@ identiques bit à bit à la source, y compris avec canal alpha et
 profondeur 16 bits ; JPEG avec un écart minime et attendu à qualité 100),
 l'extension Nautilus avec les vraies bibliothèques GObject Introspection,
 et l'IHM par un scénario de bout en bout sous Xvfb (détection →
-conversion → fichiers produits). **Le décodage RAW n'a pas encore été
-testé avec un vrai fichier caméra** — à valider avec vos propres fichiers
-RAW avant une utilisation en production.
+conversion → fichiers produits). Le décodage RAW a, lui, été validé en usage réel avec des fichiers
+d'appareils photo.
 
 ```bash
 cargo build --release && ./target/release/convert-images-engine formats

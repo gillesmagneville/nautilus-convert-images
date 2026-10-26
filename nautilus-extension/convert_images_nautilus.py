@@ -18,7 +18,15 @@ import tempfile
 
 import gi
 
-gi.require_version("Nautilus", "4.0")
+# Volontairement PAS de gi.require_version("Nautilus", ...) : au moment où
+# ce fichier s'exécute, le processus Nautilus hôte a déjà chargé le
+# typelib Nautilus correspondant à sa propre version (4.0, 4.1, ...).
+# Figer une version précise ici échoue selon la machine : soit elle ne
+# correspond pas à celle déjà chargée par Nautilus lui-même
+# ("already loaded with version X"), soit elle n'est simplement pas
+# installée sur ce système ("not available for version X"). GObject n'a
+# en revanche qu'une seule version d'introspection possible (2.0) : la
+# figer ne pose aucun risque de conflit.
 gi.require_version("GObject", "2.0")
 
 from gi.repository import GObject, Nautilus  # noqa: E402

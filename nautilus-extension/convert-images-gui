@@ -126,6 +126,8 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.detected_files = []  # liste de (path, format_label, is_raw)
         self.output_dir = common_parent_dir(input_paths)
         self.convert_proc = None
+        self.conversion_in_progress = False
+        self.connect("close-request", self._on_close_request)
 
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         root.set_margin_top(16)
@@ -154,7 +156,7 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.format_dropdown = Gtk.DropDown.new_from_strings(
             [label for _id, label in FORMAT_CHOICES]
         )
-        self.format_dropdown.set_selected(1)  # PNG par défaut (sans perte)
+        self.format_dropdown.set_selected(0)  # JPEG par défaut
         self.format_dropdown.connect("notify::selected", self._on_format_changed)
         grid.attach(self.format_dropdown, 1, 0, 1, 1)
 
@@ -189,7 +191,8 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
 
         self._on_format_changed(self.format_dropdown, None)
 
-        # --- Bouton de conversion ---
+        # --- Barre d'actions : Annuler/Convertir (masquée avec le reste des
+        # options jusqu'à la fin de la détection) ---
         action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         action_box.set_halign(Gtk.Align.END)
         self.cancel_btn = Gtk.Button(label="Annuler la conversion")
@@ -220,6 +223,13 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.open_dest_btn.set_visible(False)
         self.open_dest_btn.connect("clicked", self._on_open_dest_clicked)
         root.append(self.open_dest_btn)
+
+        # --- Quitter : toujours visible, même pendant la détection ---
+        quit_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.quit_btn = Gtk.Button(label="Quitter")
+        self.quit_btn.connect("clicked", self._on_quit_clicked)
+        quit_bar.append(self.quit_btn)
+        root.append(quit_bar)
 
         self._start_detection()
 
@@ -317,6 +327,7 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.convert_progress.set_fraction(0.0)
         self.log_scroller.set_visible(True)
         self.log_buffer.set_text("")
+        self.conversion_in_progress = True
         self._append_log(f"Conversion vers {fmt_id.upper()} → {self.output_dir}\n")
 
         self._run_streaming(args, self._on_convert_line, self._on_convert_done)
@@ -344,6 +355,7 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
             self._append_log(f"[ERREUR FATALE] {event.get('message')}\n")
 
     def _on_convert_done(self, success, _returncode):
+        self.conversion_in_progress = False
         self.convert_btn.set_sensitive(True)
         self.cancel_btn.set_visible(False)
         self.open_dest_btn.set_visible(True)
@@ -356,6 +368,51 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
     def _on_open_dest_clicked(self, _btn):
         uri = GLib.filename_to_uri(self.output_dir, None)
         Gio.AppInfo.launch_default_for_uri(uri, None)
+
+    # ---------------------------------------------------------------- quit
+
+    def _on_quit_clicked(self, _btn):
+        self._request_quit()
+
+    def _on_close_request(self, _window):
+        """Appelé quand l'utilisateur clique sur la croix de fermeture de
+        la fenêtre. Retourne True pour bloquer la fermeture immédiate
+        (le dialogue de confirmation décidera ensuite), False pour la
+        laisser se faire normalement."""
+        if self.conversion_in_progress:
+            self._confirm_quit_dialog()
+            return True
+        return False
+
+    def _request_quit(self):
+        if self.conversion_in_progress:
+            self._confirm_quit_dialog()
+        else:
+            self.get_application().quit()
+
+    def _confirm_quit_dialog(self):
+        dialog = Gtk.AlertDialog()
+        dialog.set_message("Conversion en cours")
+        dialog.set_detail(
+            "Quitter maintenant interrompra la conversion en cours. Les "
+            "fichiers déjà convertis restent sur le disque ; les suivants "
+            "ne seront pas traités."
+        )
+        dialog.set_buttons(["Annuler", "Quitter quand même"])
+        dialog.set_cancel_button(0)
+        dialog.set_default_button(0)
+
+        def on_response(dlg, result):
+            try:
+                choice = dlg.choose_finish(result)
+            except GLib.Error:
+                return
+            if choice == 1:
+                if self.convert_proc:
+                    self.convert_proc.force_exit()
+                self.get_application().quit()
+
+        dialog.choose(self, None, on_response)
 
     # ------------------------------------------------------------- helpers
 

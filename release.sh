@@ -1,0 +1,461 @@
+#!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-only
+set -euo pipefail
+
+# ============================================================
+# nautilus-convert-images - release.sh
+#
+# Publie la release stable GitHub correspondant au contenu de VERSION :
+#   1. controles prealables (branche, remote, tag libre, correctifs presents)
+#   2. mise en coherence (MAINTAINER, dependances .rpm, Cargo.toml, README,
+#      CHANGELOG) puis reconstruction des paquets si necessaire
+#   3. verification du contenu des paquets (.deb / .rpm)
+#   4. commit + push sur main
+#   5. creation de la release (tag, notes, .deb, .rpm, SHA256SUMS)
+#
+# A lancer depuis la racine du depot, apres les builds habituels.
+# Utiliser --dry-run pour tout voir sans rien modifier ni publier.
+# ============================================================
+
+REPO_SLUG="gillesmagneville/nautilus-convert-images"
+PKG="nautilus-convert-images"
+DRY_RUN=false
+ASSUME_YES=false
+
+show_help() {
+  cat <<EOF
+Usage: ./release.sh [options]
+
+Publie la release stable GitHub de nautilus-convert-images (tag v\$(cat VERSION)).
+
+  --dry-run    Affiche ce qui serait fait (et les notes de release) sans rien
+               modifier, committer, pousser ni publier
+  --yes, -y    Ne pas demander de confirmation (variables utiles :
+               RAW_TESTED=1 si un vrai fichier RAW a ete converti avec succes,
+               RELEASE_MAINTAINER="Nom <email>" pour le champ maintainer)
+  --help, -h   Affiche cette aide
+EOF
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY_RUN=true; shift ;;
+    --yes|-y) ASSUME_YES=true; shift ;;
+    --help|-h) show_help; exit 0 ;;
+    *) echo "Option inconnue : $1" >&2; show_help >&2; exit 1 ;;
+  esac
+done
+
+step() { printf '\n>>> %s\n' "$*"; }
+info() { printf '    %s\n' "$*"; }
+warn() { printf '  ! %s\n' "$*" >&2; }
+die()  { printf '\nErreur : %s\n' "$*" >&2; exit 1; }
+
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+# ------------------------------------------------------------
+# 1. Controles prealables
+# ------------------------------------------------------------
+step "Controles prealables"
+
+for t in git gh python3 sha256sum dpkg-deb tar; do
+  command -v "$t" >/dev/null 2>&1 || die "outil manquant : $t"
+done
+
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "ce dossier n'est pas un depot git."
+[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || die "la branche courante n'est pas 'main'."
+
+ORIGIN_URL="$(git remote get-url origin 2>/dev/null)" || die "pas de remote 'origin'."
+case "$ORIGIN_URL" in
+  *"$REPO_SLUG"*) ;;
+  *) die "origin ne pointe pas vers $REPO_SLUG ($ORIGIN_URL)." ;;
+esac
+
+if ! gh auth status >/dev/null 2>&1; then
+  if $DRY_RUN; then
+    warn "gh n'est pas authentifie (lancez 'gh auth login' avant la vraie publication)."
+  else
+    die "gh n'est pas authentifie : lancez 'gh auth login'."
+  fi
+fi
+
+git fetch --quiet --tags origin || die "git fetch origin a echoue."
+if git rev-parse -q --verify origin/main >/dev/null; then
+  BEHIND="$(git rev-list --count HEAD..origin/main)"
+  [ "$BEHIND" = "0" ] || die "origin/main contient $BEHIND commit(s) absent(s) en local : faites d'abord 'git pull --rebase'."
+fi
+
+[ -f VERSION ] || die "fichier VERSION introuvable."
+VERSION="$(tr -d '[:space:]' < VERSION)"
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "VERSION invalide : '$VERSION' (attendu X.Y.Z)."
+TAG="v$VERSION"
+info "Version : $VERSION  ->  tag $TAG"
+
+if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+  die "le tag $TAG existe deja en local."
+fi
+if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+  die "le tag $TAG existe deja sur GitHub."
+fi
+if gh release view "$TAG" --repo "$REPO_SLUG" >/dev/null 2>&1; then
+  die "une release $TAG existe deja sur GitHub."
+fi
+
+# Vrai si le fichier fige la version de Nautilus par une instruction ACTIVE
+# (les lignes de commentaire qui citent l'instruction ne comptent pas).
+has_nautilus_pin() {
+  grep -Eq '^[[:space:]]*gi\.require_version\([[:space:]]*["'"'"']Nautilus["'"'"']' "$1"
+}
+
+EXT="nautilus-extension/convert_images_nautilus.py"
+GUI="nautilus-extension/convert-images-gui"
+[ -f "$EXT" ] && [ -f "$GUI" ] || die "extension ou IHM introuvable dans nautilus-extension/."
+if has_nautilus_pin "$EXT"; then
+  die "$EXT fige encore la version de Nautilus (correctif Nautilus 4.1 absent)."
+fi
+grep -q 'format_dropdown.set_selected(0)' "$GUI" || die "$GUI : le format JPEG n'est pas le format par defaut."
+grep -q 'close-request' "$GUI" || die "$GUI : le bouton/avertissement Quitter est absent."
+info "Sources : correctifs Nautilus 4.1, JPEG par defaut et Quitter presents."
+
+DEB="${PKG}_${VERSION}_amd64.deb"
+RPM="${PKG}-${VERSION}-1.x86_64.rpm"
+
+# ------------------------------------------------------------
+# 2. Mise en coherence (planification)
+# ------------------------------------------------------------
+step "Mise en coherence des fichiers"
+
+TODAY="$(date +%F)"
+export VERSION TODAY
+
+RAW_TESTED="${RAW_TESTED:-}"
+if [ -z "$RAW_TESTED" ]; then
+  if ! $ASSUME_YES && [ -t 0 ]; then
+    read -r -p "Un vrai fichier RAW d'appareil photo a-t-il deja ete converti avec succes ? [o/N] " a
+    [[ "$a" =~ ^[oOyY]$ ]] && RAW_TESTED=1 || RAW_TESTED=0
+  else
+    RAW_TESTED=0
+  fi
+fi
+export RAW_TESTED
+
+MAINT=""
+if grep -q 'you@example.com' build-deb.sh build-rpm.sh; then
+  MAINT="${RELEASE_MAINTAINER:-}"
+  if [ -z "$MAINT" ]; then
+    GN="$(git config user.name || true)"; GE="$(git config user.email || true)"
+    [ -n "$GN" ] && [ -n "$GE" ] || die "MAINTAINER factice dans build-*.sh : definissez RELEASE_MAINTAINER=\"Nom <email>\" (ou git config user.name/user.email)."
+    MAINT="$GN <$GE>"
+  fi
+  case "$MAINT" in
+    *\"*|*\$*|*\`*|*\\*) die "RELEASE_MAINTAINER contient un caractere interdit (\" \$ \` \\)." ;;
+  esac
+  info "MAINTAINER des paquets : $MAINT"
+fi
+export MAINT
+
+# Patch commun : APPLY=0 liste les changements, APPLY=1 les ecrit.
+patch_files() {
+  APPLY="$1" python3 -I - <<'PY'
+import os, re, sys
+
+apply_ = os.environ["APPLY"] == "1"
+version = os.environ["VERSION"]
+today = os.environ["TODAY"]
+raw_tested = os.environ["RAW_TESTED"] == "1"
+maint = os.environ.get("MAINT", "")
+changes = []
+
+def patch(path, fn, what):
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        old = f.read()
+    new = fn(old)
+    if new != old:
+        changes.append(f"{path} : {what}")
+        if apply_:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(new)
+
+def fix_maint(s):
+    if "you@example.com" in s and maint:
+        s = re.sub(r'^MAINTAINER=.*$', lambda m: f'MAINTAINER="{maint}"', s, count=1, flags=re.M)
+    return re.sub(r'(^URL="[^"]*")[ \t]*# <-- a verifier', r'\1', s, flags=re.M)
+
+def fix_deps(s):
+    return (s.replace('--depends "python3-gi"', '--depends "python3-gobject"')
+             .replace('--depends "gir1.2-gtk-4.0"', '--depends "gtk4"')
+             .replace('--depends "python3-nautilus"', '--depends "nautilus-python"'))
+
+def sync_cargo(s):
+    return re.sub(r'^version = ".*"$', f'version = "{version}"', s, count=1, flags=re.M)
+
+def readme(s):
+    s = s.replace("Version scaffold v1, fonctionnelle de bout en bout :",
+                  "Version stable, fonctionnelle de bout en bout :")
+    if raw_tested:
+        s = s.replace(
+            "**Le décodage RAW n'a pas encore été\n"
+            "testé avec un vrai fichier caméra** — à valider avec vos propres fichiers\n"
+            "RAW avant une utilisation en production.",
+            "Le décodage RAW a, lui, été validé en usage réel avec des fichiers\n"
+            "d'appareils photo.")
+    return s
+
+def changelog(s):
+    marker = f"tag `v{version}`"
+    if marker in s:
+        return s
+    para = f"Première release stable publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`)."
+    if re.search(r'^## ' + re.escape(today) + r'[ \t]*$', s, flags=re.M):
+        return re.sub(r'(^## ' + re.escape(today) + r'[ \t]*\n)',
+                      lambda m: m.group(1) + "\n" + para + "\n", s, count=1, flags=re.M)
+    return s.replace("## [Non publié]\n", f"## [Non publié]\n\n## {today}\n\n{para}\n", 1)
+
+patch("build-deb.sh", fix_maint, "MAINTAINER réel")
+patch("build-rpm.sh", fix_maint, "MAINTAINER réel")
+patch("build-rpm.sh", fix_deps, "dépendances Fedora/RHEL (python3-gobject, gtk4, nautilus-python)")
+patch("Cargo.toml", sync_cargo, f"version = {version}")
+patch("README.md", readme, "statut « stable »" + (" + décodage RAW validé" if raw_tested else ""))
+patch("CHANGELOG.md", changelog, f"entrée {today} (release v{version})")
+
+for c in changes:
+    print(c)
+PY
+}
+
+PLANNED="$(patch_files 0)"
+if [ -n "$PLANNED" ]; then
+  printf '%s\n' "$PLANNED" | sed 's/^/    a modifier : /'
+else
+  info "Aucune modification de fichier necessaire."
+fi
+
+# ------------------------------------------------------------
+# Inspection des paquets existants (utilisee avant ET apres reconstruction)
+# ------------------------------------------------------------
+PROBLEMS=()
+inspect_packages() {
+  PROBLEMS=()
+  local d eng out v g
+  if [ ! -f "$DEB" ]; then
+    PROBLEMS+=("$DEB absent")
+  else
+    v="$(dpkg-deb -f "$DEB" Version)"
+    [ "$v" = "$VERSION" ] || PROBLEMS+=("$DEB : champ Version = $v")
+    dpkg-deb -f "$DEB" Maintainer | grep -q 'example.com' && PROBLEMS+=("$DEB : maintainer factice")
+    d="$(mktemp -d "$WORK/deb.XXXXXX")"
+    dpkg-deb -x "$DEB" "$d"
+    for f in convert-images-engine convert-images-gui convert_images_nautilus.py; do
+      [ -n "$(find "$d" -type f -name "$f" -print -quit)" ] || PROBLEMS+=("$DEB : $f manquant")
+    done
+    if [ -n "$(find "$d" -type f -name 'convert_images_nautilus.py' -print -quit)" ] \
+       && has_nautilus_pin "$(find "$d" -type f -name 'convert_images_nautilus.py' -print -quit)"; then
+      PROBLEMS+=("$DEB : extension obsolete (version de Nautilus figee)")
+    fi
+    g="$(find "$d" -type f -name convert-images-gui -print -quit)"
+    if [ -n "$g" ] && { ! grep -q 'format_dropdown.set_selected(0)' "$g" || ! grep -q 'close-request' "$g"; }; then
+      PROBLEMS+=("$DEB : IHM obsolete (JPEG par defaut ou Quitter absents)")
+    fi
+    eng="$(find "$d" -type f -name convert-images-engine -print -quit)"
+    if [ -n "$eng" ]; then
+      out="$("$eng" --version 2>/dev/null || true)"
+      if [ -z "$out" ]; then
+        warn "impossible de lire la version du moteur dans le .deb (--version vide)."
+      elif ! printf '%s' "$out" | grep -qF "$VERSION"; then
+        PROBLEMS+=("$DEB : le moteur annonce '$out' (attendu $VERSION)")
+      fi
+    fi
+  fi
+  if [ ! -f "$RPM" ]; then
+    PROBLEMS+=("$RPM absent")
+  elif command -v rpm >/dev/null 2>&1; then
+    rpm -qpR "$RPM" 2>/dev/null | grep -qE '^(python3-gi|gir1\.2-gtk-4\.0|python3-nautilus)( |$)' \
+      && PROBLEMS+=("$RPM : dépendances au nom Debian (invalides sur Fedora/RHEL)")
+    rpm -qp --qf '%{PACKAGER}\n' "$RPM" 2>/dev/null | grep -q 'example.com' \
+      && PROBLEMS+=("$RPM : maintainer factice")
+  else
+    warn "'rpm' n'est pas installe : contenu du .rpm non inspecte."
+  fi
+  return 0
+}
+
+# Paquets plus anciens que les fichiers qu'ils embarquent ?
+stale_sources() {
+  local pkg="$1"
+  [ -f "$pkg" ] || return 0
+  find src nautilus-extension packaging Cargo.toml Cargo.lock build-deb.sh build-rpm.sh \
+       README.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE \
+       -type f -newer "$pkg" -print -quit 2>/dev/null
+}
+
+inspect_packages
+NEED_REBUILD=false
+if [ -n "$PLANNED" ]; then
+  NEED_REBUILD=true
+  info "Reconstruction necessaire : des fichiers embarques dans les paquets vont changer."
+fi
+if [ "${#PROBLEMS[@]}" -gt 0 ]; then
+  NEED_REBUILD=true
+  for p in "${PROBLEMS[@]}"; do info "probleme : $p"; done
+fi
+for pkg in "$DEB" "$RPM"; do
+  s="$(stale_sources "$pkg")"
+  if [ -n "$s" ]; then
+    NEED_REBUILD=true
+    info "$pkg est plus ancien que $s"
+  fi
+done
+$NEED_REBUILD || info "Paquets existants a jour et conformes : ils seront publies tels quels."
+
+# ------------------------------------------------------------
+# Notes de release
+# ------------------------------------------------------------
+NOTES="$WORK/notes.md"
+{
+cat <<EOF
+# nautilus-convert-images $TAG
+
+Première release stable : conversion d'images **sans perte** directement depuis le menu contextuel de Nautilus (GNOME Fichiers).
+
+## Fonctionnalités
+
+- **Formats source** : RAW (CR2, CR3, NEF, ARW, DNG, ORF, RAF, RW2, PEF, SRW, X3F…), JPEG, PNG, TIFF, BMP, GIF, WebP — détection par extension puis par contenu, y compris dans les dossiers sélectionnés.
+- **Formats de destination** : JPEG (par défaut, qualité 100), PNG, TIFF, BMP, WebP — pleine résolution, **aucun recadrage ni redimensionnement** ; PNG, TIFF, BMP et WebP sont sans perte.
+- **Interface GTK4 native** : détection en temps réel, choix du format et du dossier de destination (création de dossier possible), gestion des collisions de noms, progression et journal.
+- **Conversion parallèle** (moteur Rust, décodage RAW en Rust pur, sans libraw).
+- **Bouton Quitter**, avec avertissement si des conversions sont encore en cours.
+- Compatible avec les versions 4.0 et 4.1 de la bibliothèque Nautilus.
+
+## Installation
+
+Debian / Ubuntu et dérivés :
+
+\`\`\`bash
+sudo apt install ./${DEB}
+\`\`\`
+
+Fedora / RHEL et dérivés (\`nautilus-python\` est requis ; sur RHEL/Rocky/Alma il vient d'EPEL) :
+
+\`\`\`bash
+sudo dnf install ./${RPM}
+\`\`\`
+
+Nautilus est redémarré automatiquement à l'installation pour activer l'entrée « Convertir les images… » du menu contextuel.
+
+Vérification des téléchargements : \`sha256sum -c SHA256SUMS\`.
+EOF
+if [ "$RAW_TESTED" != "1" ]; then
+cat <<'EOF'
+
+## Limite connue
+
+Le décodage RAW n'a pas encore été vérifié sur un large éventail de boîtiers : signalez tout fichier problématique via les [issues](https://github.com/gillesmagneville/nautilus-convert-images/issues).
+EOF
+fi
+cat <<EOF
+
+Voir le [CHANGELOG](https://github.com/${REPO_SLUG}/blob/main/CHANGELOG.md) pour le détail.
+EOF
+} > "$NOTES"
+
+step "Notes de release (aperçu)"
+sed 's/^/    | /' "$NOTES"
+
+# ------------------------------------------------------------
+# Plan et confirmation
+# ------------------------------------------------------------
+step "Plan"
+info "1. $($NEED_REBUILD && echo 'reconstruire .deb et .rpm (build-*.sh --no-version-change --yes)' || echo 'aucune reconstruction')"
+info "2. commit + push de main (etat actuel :)"
+git status --short | sed 's/^/         /'
+info "3. creer la release $TAG sur $REPO_SLUG (stable, 'latest') avec : $DEB, $RPM, SHA256SUMS"
+
+if $DRY_RUN; then
+  printf '\n[dry-run] Rien n'"'"'a ete modifie, committe, pousse ni publie.\n'
+  exit 0
+fi
+
+if ! $ASSUME_YES; then
+  [ -t 0 ] || die "pas de terminal interactif : relancez avec --yes."
+  read -r -p $'\nPublier la release '"$TAG"$' ? [o/N] ' a
+  [[ "$a" =~ ^[oOyY]$ ]] || { echo "Annule. Rien n'a ete modifie."; exit 0; }
+fi
+
+# ------------------------------------------------------------
+# 3. Application + reconstruction
+# ------------------------------------------------------------
+step "Application des modifications"
+if [ -n "$PLANNED" ]; then
+  patch_files 1 | sed 's/^/    modifie : /'
+fi
+
+if $NEED_REBUILD; then
+  for t in cargo fpm rpmbuild; do
+    command -v "$t" >/dev/null 2>&1 || die "outil manquant pour reconstruire les paquets : $t"
+  done
+  step "Reconstruction du .deb"
+  ./build-deb.sh --no-version-change --yes
+  step "Reconstruction du .rpm"
+  ./build-rpm.sh --no-version-change --yes
+  [ "$(tr -d '[:space:]' < VERSION)" = "$VERSION" ] || die "VERSION a change pendant le build."
+  inspect_packages
+  if [ "${#PROBLEMS[@]}" -gt 0 ]; then
+    for p in "${PROBLEMS[@]}"; do warn "$p"; done
+    die "les paquets reconstruits ne sont pas conformes : release annulee (rien n'est pousse)."
+  fi
+  info "Paquets reconstruits et verifies."
+fi
+
+(sha256sum "$DEB" "$RPM") > "$WORK/SHA256SUMS"
+
+# ------------------------------------------------------------
+# 4. Commit + push
+# ------------------------------------------------------------
+step "Commit et push sur main"
+if [ -n "$(git status --porcelain)" ]; then
+  git add -A
+  git commit -q -m "Release $TAG" \
+             -m "Correctifs Nautilus 4.1 (typelib), JPEG par défaut, bouton Quitter avec avertissement, dépendances RPM Fedora/RHEL, maintainer réel et documentation à jour."
+  info "Commit créé : $(git rev-parse --short HEAD)"
+else
+  info "Rien à valider."
+fi
+if [ "$(git rev-list --count origin/main..HEAD)" != "0" ]; then
+  git push origin main
+fi
+SHA="$(git rev-parse HEAD)"
+REMOTE_SHA="$(git ls-remote origin refs/heads/main | cut -f1)"
+[ "$REMOTE_SHA" = "$SHA" ] || die "origin/main ($REMOTE_SHA) != HEAD local ($SHA) : release annulee."
+info "origin/main = $SHA"
+
+# ------------------------------------------------------------
+# 5. Release
+# ------------------------------------------------------------
+step "Creation de la release $TAG"
+gh release create "$TAG" "$DEB" "$RPM" "$WORK/SHA256SUMS" \
+  --repo "$REPO_SLUG" \
+  --target "$SHA" \
+  --title "$PKG $TAG" \
+  --notes-file "$NOTES" \
+  --latest
+
+git fetch --quiet --tags origin || true
+
+step "Verification"
+STATE="$(gh release view "$TAG" --repo "$REPO_SLUG" --json isDraft,isPrerelease,url --jq '"\(.isDraft) \(.isPrerelease) \(.url)"')"
+read -r IS_DRAFT IS_PRE URL <<< "$STATE"
+[ "$IS_DRAFT" = "false" ] && [ "$IS_PRE" = "false" ] || die "la release n'est pas une release stable publiee (draft=$IS_DRAFT, prerelease=$IS_PRE)."
+ASSETS="$(gh release view "$TAG" --repo "$REPO_SLUG" --json assets --jq '.assets[].name')"
+for a in "$DEB" "$RPM" SHA256SUMS; do
+  printf '%s\n' "$ASSETS" | grep -qxF "$a" || die "fichier absent de la release : $a"
+done
+echo ""
+echo "Release stable publiee : $URL"
+printf '%s\n' "$ASSETS" | sed 's/^/   /'
+echo ""
+echo "Annulation si besoin : gh release delete $TAG --repo $REPO_SLUG --cleanup-tag"

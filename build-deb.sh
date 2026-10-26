@@ -17,9 +17,9 @@ set -euo pipefail
 # ============================================================
 
 PACKAGE_NAME="nautilus-convert-images"
-MAINTAINER="Your Name <you@example.com>"   # <-- a personnaliser
+MAINTAINER="Gilles MAGNEVILLE <gilles@magneville.fr>"
 DESCRIPTION="Conversion d'images (RAW, JPEG, PNG, TIFF, BMP, WebP) sans perte, integree au menu contextuel de Nautilus"
-URL="https://github.com/gillesmagneville/nautilus-convert-images"   # <-- a verifier
+URL="https://github.com/gillesmagneville/nautilus-convert-images"
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$HOME/nautilus-convert-images-build/deb"
