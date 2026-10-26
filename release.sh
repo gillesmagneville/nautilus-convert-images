@@ -11,7 +11,7 @@ set -euo pipefail
 #      CHANGELOG) puis reconstruction des paquets si necessaire
 #   3. verification du contenu des paquets (.deb / .rpm)
 #   4. commit + push sur main
-#   5. creation de la release (tag, notes, .deb, .rpm, SHA256SUMS)
+#   5. creation de la release (tag, notes, .deb, .rpm, un .sha256 par paquet)
 #
 # A lancer depuis la racine du depot, apres les builds habituels.
 # Utiliser --dry-run pour tout voir sans rien modifier ni publier.
@@ -122,6 +122,8 @@ info "Sources : correctifs Nautilus 4.1, JPEG par defaut et Quitter presents."
 
 DEB="${PKG}_${VERSION}_amd64.deb"
 RPM="${PKG}-${VERSION}-1.x86_64.rpm"
+DEB_SUM="${DEB}.sha256"
+RPM_SUM="${RPM}.sha256"
 
 # ------------------------------------------------------------
 # 2. Mise en coherence (planification)
@@ -347,7 +349,12 @@ sudo dnf install ./${RPM}
 
 Nautilus est redémarré automatiquement à l'installation pour activer l'entrée « Convertir les images… » du menu contextuel.
 
-Vérification des téléchargements : \`sha256sum -c SHA256SUMS\`.
+Vérification des téléchargements (le paquet et son fichier \`.sha256\` dans le même dossier) :
+
+\`\`\`bash
+sha256sum -c ${DEB_SUM}
+sha256sum -c ${RPM_SUM}
+\`\`\`
 EOF
 if [ "$RAW_TESTED" != "1" ]; then
 cat <<'EOF'
@@ -373,7 +380,7 @@ step "Plan"
 info "1. $($NEED_REBUILD && echo 'reconstruire .deb et .rpm (build-*.sh --no-version-change --yes)' || echo 'aucune reconstruction')"
 info "2. commit + push de main (etat actuel :)"
 git status --short | sed 's/^/         /'
-info "3. creer la release $TAG sur $REPO_SLUG (stable, 'latest') avec : $DEB, $RPM, SHA256SUMS"
+info "3. creer la release $TAG sur $REPO_SLUG (stable, 'latest') avec : $DEB, $RPM, $DEB_SUM, $RPM_SUM"
 
 if $DRY_RUN; then
   printf '\n[dry-run] Rien n'"'"'a ete modifie, committe, pousse ni publie.\n'
@@ -411,7 +418,8 @@ if $NEED_REBUILD; then
   info "Paquets reconstruits et verifies."
 fi
 
-(sha256sum "$DEB" "$RPM") > "$WORK/SHA256SUMS"
+sha256sum "$DEB" > "$WORK/$DEB_SUM"
+sha256sum "$RPM" > "$WORK/$RPM_SUM"
 
 # ------------------------------------------------------------
 # 4. Commit + push
@@ -437,7 +445,7 @@ info "origin/main = $SHA"
 # 5. Release
 # ------------------------------------------------------------
 step "Creation de la release $TAG"
-gh release create "$TAG" "$DEB" "$RPM" "$WORK/SHA256SUMS" \
+gh release create "$TAG" "$DEB" "$RPM" "$WORK/$DEB_SUM" "$WORK/$RPM_SUM" \
   --repo "$REPO_SLUG" \
   --target "$SHA" \
   --title "$PKG $TAG" \
@@ -451,7 +459,7 @@ STATE="$(gh release view "$TAG" --repo "$REPO_SLUG" --json isDraft,isPrerelease,
 read -r IS_DRAFT IS_PRE URL <<< "$STATE"
 [ "$IS_DRAFT" = "false" ] && [ "$IS_PRE" = "false" ] || die "la release n'est pas une release stable publiee (draft=$IS_DRAFT, prerelease=$IS_PRE)."
 ASSETS="$(gh release view "$TAG" --repo "$REPO_SLUG" --json assets --jq '.assets[].name')"
-for a in "$DEB" "$RPM" SHA256SUMS; do
+for a in "$DEB" "$RPM" "$DEB_SUM" "$RPM_SUM"; do
   printf '%s\n' "$ASSETS" | grep -qxF "$a" || die "fichier absent de la release : $a"
 done
 echo ""
