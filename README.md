@@ -31,8 +31,8 @@ les principes, `ARCHITECTURE.md` pour le contrat technique.
   choisissez le dossier de destination (création possible) et ce qui se
   passe si un nom existe déjà (ignorer, renommer, écraser), puis suivez la
   progression en direct.
-* **Léger et libre** — décodage RAW en Rust pur (aucune `libraw` à
-  installer), licence GPL-3.0.
+* **Léger et libre** — décodeurs RAW intégrés au programme (rien à
+  installer en plus), licence GPL-3.0.
 
 | Vous avez | Vous voulez | Il suffit de |
 |---|---|---|
@@ -89,6 +89,13 @@ puis par analyse du contenu, avec en dernier recours une tentative de
 décodage réel. Les RAW sont décodés à pleine résolution (zone active du
 capteur).
 
+**Décodage RAW :** `rawloader` d'abord ; si le fichier ne peut pas être lu
+(typiquement un boîtier absent de sa base), repli automatique sur
+[LibRaw](https://www.libraw.org/), embarquée dans le programme. Si les deux
+échouent, l'erreur est affichée pour ce fichier et le lot continue avec le
+suivant. Le rendu du repli (balance des blancs de l'appareil, sRGB) peut
+diffèrer légèrement du décodeur principal.
+
 Le moteur, l'extension et l'IHM sont découplés (voir `ARCHITECTURE.md`) :
 le moteur (`convert-images-engine`) est un exécutable CLI autonome,
 utilisable indépendamment de Nautilus ou de GTK.
@@ -110,6 +117,10 @@ Rust) :
 sudo apt-get install rustc cargo libgtk-4-dev python3-gi gir1.2-gtk-4.0 \
     python3-nautilus pkg-config build-essential
 ```
+
+`build-essential` fournit `g++`, nécessaire pour compiler LibRaw (C++)
+embarquée dans `vendor/` : la première compilation est donc plus longue
+(quelques minutes), les suivantes sont incrémentales.
 
 ## Packaging
 
@@ -169,8 +180,8 @@ authentifié.
 
 Le moteur (`convert-images-engine`) ne dépend d'aucune bibliothèque
 externe au-delà de ce que `cargo build` lie statiquement — en particulier
-aucune dépendance à `libraw` (voir « Philosophie des dépendances » dans
-`ARCHITECTURE.md`). L'IHM et l'extension nécessitent, au moment de
+aucune bibliothèque LibRaw à installer : elle est embarquée statiquement
+(voir « Philosophie des dépendances » dans `ARCHITECTURE.md`). L'IHM et l'extension nécessitent, au moment de
 l'exécution : `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (noms de
 paquets Debian/Ubuntu ; `python3-gobject`, `gtk4`, `nautilus-python` sur
 Fedora) — déjà déclarés comme dépendances par les deux scripts de
@@ -195,8 +206,9 @@ identiques bit à bit à la source, y compris avec canal alpha et
 profondeur 16 bits ; JPEG avec un écart minime et attendu à qualité 100),
 l'extension Nautilus avec les vraies bibliothèques GObject Introspection,
 et l'IHM par un scénario de bout en bout sous Xvfb (détection →
-conversion → fichiers produits). Le décodage RAW a, lui, été validé en
-usage réel avec des fichiers d'appareils photo.
+conversion → fichiers produits). Le repli LibRaw est couvert par des
+tests unitaires (`cargo test`) sur un DNG synthétique ; la fidélité sur de
+vrais fichiers d'appareils est validée au cas par cas.
 
 ```bash
 cargo build --release && ./target/release/convert-images-engine formats
@@ -248,8 +260,12 @@ nautilus-convert-images/
 │   ├── main.rs                 # point d'entrée CLI, sortie JSON en flux
 │   ├── cli.rs                   # clap, énumération récursive des fichiers
 │   ├── formats.rs                # détection de format (standard + RAW)
-│   ├── raw.rs                     # décodage RAW (rawloader + imagepipe)
+│   ├── raw.rs                     # décodage RAW (rawloader + imagepipe, repli LibRaw)
+│   ├── libraw.rs                   # décodeur de secours (LibRaw)
 │   └── convert.rs                  # décodage + encodage vers le format cible
+│
+├── vendor/
+│   └── libraw-sys/              # LibRaw (C++) et ses liaisons, compilée statiquement
 │
 ├── nautilus-extension/
 │   ├── convert_images_nautilus.py    # extension nautilus-python

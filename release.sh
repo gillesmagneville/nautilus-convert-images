@@ -226,7 +226,7 @@ def changelog(s):
     marker = f"tag `v{version}`"
     if marker in s:
         return s
-    has_today = re.search(r'^## ' + re.escape(today) + r'[ \t]*$', s, flags=re.M)
+    has_today = re.search(r'^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?$', s, flags=re.M)
     if first:
         para = f"Première release stable publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`)."
     elif has_today:
@@ -234,7 +234,7 @@ def changelog(s):
     else:
         para = f"Release stable `v{version}` publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`)."
     if has_today:
-        return re.sub(r'(^## ' + re.escape(today) + r'[ \t]*\n)',
+        return re.sub(r'(^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?\n)',
                       lambda m: m.group(1) + "\n" + para + "\n", s, count=1, flags=re.M)
     return s.replace("## [Non publié]\n", f"## [Non publié]\n\n## {today}\n\n{para}\n", 1)
 
@@ -345,7 +345,7 @@ changelog_section() {
 import re, sys
 today = sys.argv[1]
 s = open("CHANGELOG.md", encoding="utf-8").read()
-m = re.search(r'^## ' + re.escape(today) + r'[ \t]*\n(.*?)(?=^## |\Z)', s, flags=re.M | re.S)
+m = re.search(r'^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?\n(.*?)(?=^## |\Z)', s, flags=re.M | re.S)
 print(m.group(1).strip() if m else "")
 PY
 }
@@ -405,7 +405,7 @@ cat <<'EOF'
 
 ## Limite connue
 
-Le décodage RAW n'a pas encore été vérifié sur un large éventail de boîtiers : signalez tout fichier problématique via les [issues](https://github.com/gillesmagneville/nautilus-convert-images/issues).
+Le décodage RAW utilise `rawloader`, puis LibRaw en secours pour les boîtiers inconnus du premier. La fidélité des couleurs n'a été vérifiée que sur un nombre limité de boîtiers : signalez tout fichier refusé ou aux couleurs douteuses via les [issues](https://github.com/gillesmagneville/nautilus-convert-images/issues), en indiquant le modèle d'appareil.
 EOF
 fi
 cat <<EOF

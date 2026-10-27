@@ -61,12 +61,15 @@ nautilus-convert-images/
 │   ├── main.rs                    # point d'entrée CLI, boucle rayon, sortie JSON
 │   ├── cli.rs                      # clap : sous-commandes, énumération récursive des fichiers
 │   ├── formats.rs                   # détection de format (standard + RAW)
-│   ├── raw.rs                        # décodage RAW (rawloader + imagepipe)
+│   ├── raw.rs                        # décodage RAW (rawloader + imagepipe, repli LibRaw)
+│   ├── libraw.rs                      # décodeur de secours (LibRaw, statique)
 │   └── convert.rs                     # décodage source + encodage vers le format cible
 │
 ├── nautilus-extension/
 │   ├── convert_images_nautilus.py    # extension nautilus-python (menu contextuel)
 │   └── convert-images-gui             # IHM GTK4 autonome (Python + PyGObject)
+│
+├── vendor/libraw-sys/             # LibRaw 0.21.3 + liaisons (voir vendor/README.md)
 │
 └── packaging/
     ├── nautilus-convert-images.desktop  # lancement manuel de l'IHM hors menu contextuel
@@ -118,6 +121,26 @@ de recadrage du pipeline laissées à leur valeur par défaut (no-op) — voir
 * `decode_8bit()` → RGB 8 bits/canal (JPEG, BMP, WebP)
 * `decode_16bit()` → RGB 16 bits/canal (PNG, TIFF — pour préserver toute la
   profondeur que le capteur peut fournir)
+
+**Ordre de décodage et repli.** Pour chaque fichier RAW :
+
+1. `rawloader` + `imagepipe` (décodeur principal) ;
+2. si cela échoue — typiquement un boîtier absent de la base de
+   `rawloader` — repli sur **LibRaw** (`libraw.rs`) ;
+3. si LibRaw échoue aussi, l'erreur des deux décodeurs est remontée
+   (« … ; repli LibRaw : … ») pour ce fichier seulement, et le lot continue.
+
+Chaque décodeur est exécuté sous `catch_unwind` : une panique interne
+(fichier corrompu) devient une erreur de ce fichier au lieu d'arrêter le
+moteur. `imagepipe` masque la cause réelle d'un échec (il essaie `rawloader`,
+puis `image::open`, et renvoie « Don't know how to decode image ») : `raw.rs`
+rappelle donc `rawloader::decode_file` pour remonter son erreur exacte.
+
+Réglages LibRaw (`libraw.rs`) : pleine résolution (`half_size = 0`, aucun
+recadrage ni redimensionnement), balance des blancs de l'appareil
+(`use_camera_wb = 1`), sortie sRGB avec courbe sRGB (`gamm = 1/2.4, 12.92`),
+pas de luminosité automatique (`no_auto_bright = 1`), 8 ou 16 bits selon le
+format cible. Le rendu peut différer légèrement de celui d'`imagepipe`.
 
 ## Conversion (`convert.rs`)
 
@@ -225,9 +248,12 @@ bloquant la boucle GTK. Chaque ligne JSON reçue met à jour l'interface
 
 # Philosophie des dépendances
 
-* **Pas de `libraw`** — `rawloader` + `imagepipe` sont du Rust pur : pas de
-  bibliothèque C système à lier, ce qui simplifie l'empaquetage (contraste
-  avec `raw-thumbs`, qui dépend de `libraw`).
+* **LibRaw embarquée, jamais installée** — `rawloader` + `imagepipe` (Rust
+  pur) restent le décodeur principal ; LibRaw sert de secours et est
+  compilée **statiquement** depuis `vendor/libraw-sys` : aucune bibliothèque
+  système à lier ni à déclarer comme dépendance du paquet (contraste avec
+  `raw-thumbs`, qui lie `libraw` dynamiquement). Seul `g++` est requis à la
+  compilation ; `libclang` ne l'est pas (liaisons pré-générées).
 * Le moteur n'a besoin d'aucune dépendance graphique : GTK4 n'est requis
   que côté `convert-images-gui` (Python), jamais côté Rust.
 * Toute nouvelle dépendance Rust doit se justifier par un bénéfice net

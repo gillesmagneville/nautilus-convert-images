@@ -14,7 +14,37 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
 
 ## [Non publié]
 
-## 2026-10-27
+## 2026-10-27 — v1.2.0
+
+### Ajouté
+
+- **Repli LibRaw** pour les fichiers RAW que `rawloader` ne sait pas lire,
+  typiquement un boîtier absent de sa base (cas rencontré avec les `.arw`
+  du Sony DSC-RX100M6, refusés jusque-là). Ordre : `rawloader`/`imagepipe`
+  d'abord, LibRaw ensuite, et si les deux échouent l'erreur est affichée
+  pour ce fichier et le lot continue.
+- LibRaw 0.21.3 est embarquée et compilée statiquement
+  (`vendor/libraw-sys`) : aucune bibliothèque à installer, aucune
+  dépendance ajoutée aux paquets `.deb`/`.rpm`. Seul `g++` est requis à la
+  compilation (la première compilation est plus longue).
+- Tests unitaires du décodage (`cargo test`) avec un DNG synthétique
+  généré à la volée.
+
+### Corrigé
+
+- Un RAW refusé affichait le message générique d'`imagepipe` (« Don't know
+  how to decode image ») qui masquait la vraie cause ; l'erreur exacte de
+  `rawloader` est maintenant remontée.
+- Une panique interne d'un décodeur sur un fichier corrompu arrêtait tout
+  le moteur ; elle est maintenant convertie en erreur pour ce seul fichier.
+
+### Changé
+
+- Documentation : le choix « pas de `libraw` » est remplacé par « LibRaw
+  embarquée en secours » (voir `ARCHITECTURE.md`, « Philosophie des
+  dépendances »), et l'état de la prise en charge RAW est précisé.
+
+## 2026-10-27 — v1.1.1
 
 Version de maintenance : aucun changement fonctionnel (le moteur,
 l'extension Nautilus et l'IHM sont identiques à la version précédente).

@@ -1,6 +1,7 @@
 mod cli;
 mod convert;
 mod formats;
+mod libraw;
 mod raw;
 
 use clap::Parser;
