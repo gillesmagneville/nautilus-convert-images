@@ -2,6 +2,8 @@
 
 # nautilus-convert-images
 
+🇬🇧 [English version](README.en.md)
+
 **Convertissez vos photos d'un clic droit, directement depuis Nautilus —
 RAW compris, en pleine résolution, sans recadrage ni redimensionnement.**
 
@@ -288,7 +290,8 @@ nautilus-convert-images/
 ├── release.sh                       # publication de la release GitHub
 ├── Cargo.toml
 ├── Cargo.lock
-├── README.md
+├── README.md                  # version française
+├── README.en.md                 # version anglaise
 ├── PROJECT_CONTEXT.md
 ├── ARCHITECTURE.md
 │
