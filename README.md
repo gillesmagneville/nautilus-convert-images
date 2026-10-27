@@ -2,41 +2,92 @@
 
 # nautilus-convert-images
 
-Conversion d'images pour Nautilus (GNOME Fichiers) — RAW, JPEG, PNG,
-TIFF, BMP, WebP, sans perte de qualité, sans recadrage ni
-redimensionnement. Voir `PROJECT_CONTEXT.md` pour la vision et les
-principes, `ARCHITECTURE.md` pour le contrat technique (schéma JSON,
-formats, points d'extension).
+**Convertissez vos photos d'un clic droit, directement depuis Nautilus —
+RAW compris, sans perte, sans recadrage ni redimensionnement.**
 
-## Status
+[![Dernière release](https://img.shields.io/github/v/release/gillesmagneville/nautilus-convert-images)](https://github.com/gillesmagneville/nautilus-convert-images/releases/latest)
+[![Licence GPL-3.0](https://img.shields.io/badge/licence-GPL--3.0-blue)](LICENSE)
 
-Version stable, fonctionnelle de bout en bout :
+Sélectionnez des fichiers ou des dossiers entiers dans GNOME Fichiers,
+clic droit → **Convertir les images…**, choisissez le format et le dossier
+de destination : c'est tout. Voir `PROJECT_CONTEXT.md` pour la vision et
+les principes, `ARCHITECTURE.md` pour le contrat technique.
 
-* **Détection de format** — JPEG, PNG, TIFF, BMP, GIF, WebP par extension
-  puis, en repli, par analyse du contenu du fichier ; large gamme de
-  formats RAW (Canon CR2/CR3, Nikon NEF/NRW, Sony ARW/SRF/SR2, Adobe DNG,
-  Olympus ORF, Fujifilm RAF, Panasonic RW2, Pentax PEF, Samsung SRW,
-  Sigma X3F, Hasselblad 3FR, Leica RWL, GoPro GPR, etc.), avec repli sur
-  une tentative de décodage réel quand l'extension est absente ou
-  ambiguë.
-* **Conversion** — vers JPEG (qualité réglable, 100 par défaut), PNG,
-  TIFF (non compressé), BMP, WebP sans perte (VP8L). PNG, TIFF, BMP et
-  WebP sont **authentiquement sans perte**, vérifié par comparaison
-  pixel à pixel (y compris canal alpha et profondeur 16 bits). JPEG
-  reste par nature un format avec perte — limite du format lui-même, pas
-  de cet outil, et jamais présentée comme autre chose.
-* **Aucun recadrage, aucun redimensionnement** — les RAW sont décodés à
-  pleine résolution (zone active du capteur), sans limite de taille
-  appliquée par le pipeline.
-* **Extension Nautilus** — entrée de menu contextuel sur une sélection de
-  fichiers/dossiers et sur le fond d'un dossier, qui lance l'IHM en
-  sous-processus détaché.
-* **Interface graphique GTK4** — détection en temps réel, choix du
-  format et de la qualité, dossier de destination (avec création d'un
-  nouveau dossier), politique de collision de noms, progression et
-  journal en direct.
-* **Traitement parallèle** (`rayon`) sur tous les cœurs disponibles pour
-  les conversions par lot.
+## Pourquoi l'utiliser ?
+
+* **Aucun détour** — pas d'application à lancer, pas de ligne de commande,
+  pas d'import : la conversion est dans le menu contextuel de vos fichiers.
+* **Tout ce que vous avez sous la main** — RAW (Canon, Nikon, Sony,
+  Fujifilm, Olympus, Panasonic, Pentax, Sigma, Adobe DNG…), JPEG, PNG,
+  TIFF, BMP, GIF, WebP, y compris mélangés dans un même dossier : le format
+  de chaque fichier est détecté, même quand l'extension est absente ou
+  trompeuse.
+* **Votre qualité, intacte** — pleine résolution, jamais de recadrage ni de
+  redimensionnement ; PNG, TIFF, BMP et WebP sont réellement sans perte
+  (transparence et profondeur 16 bits conservées).
+* **Rapide** — moteur en Rust, tous les cœurs du processeur travaillent en
+  parallèle sur les lots.
+* **Sous contrôle** — vous voyez ce qui a été détecté avant de lancer,
+  choisissez le dossier de destination (création possible) et ce qui se
+  passe si un nom existe déjà (ignorer, renommer, écraser), puis suivez la
+  progression en direct.
+* **Léger et libre** — décodage RAW en Rust pur (aucune `libraw` à
+  installer), licence GPL-3.0.
+
+| Vous avez | Vous voulez | Il suffit de |
+|---|---|---|
+| Un dossier de RAW après un shooting | Des JPEG à partager | le sélectionner, choisir JPEG (le choix par défaut) |
+| Des RAW à archiver | Un format sans perte | choisir TIFF ou PNG |
+| Un dossier qui mélange CR2, TIFF et PNG | Un seul format partout | tout sélectionner, choisir le format |
+| Des BMP ou PNG volumineux | Des fichiers plus compacts, sans perte | choisir WebP sans perte |
+
+## Installation
+
+Téléchargez le paquet de votre distribution depuis la page des
+[releases](https://github.com/gillesmagneville/nautilus-convert-images/releases/latest)
+(`X.Y.Z` = numéro de version), puis :
+
+```bash
+# Debian, Ubuntu et dérivés
+sudo apt install ./nautilus-convert-images_X.Y.Z_amd64.deb
+
+# Fedora, RHEL et dérivés (nautilus-python vient d'EPEL sur RHEL/Rocky/Alma)
+sudo dnf install ./nautilus-convert-images-X.Y.Z-1.x86_64.rpm
+```
+
+Nautilus est redémarré automatiquement pour activer l'entrée de menu.
+Chaque paquet est publié avec son propre fichier `.sha256` (il n'y a pas
+de `SHA256SUMS` global). Pour vérifier un téléchargement, placez le paquet
+et son fichier `.sha256` dans le même dossier :
+
+```bash
+sha256sum -c nautilus-convert-images_X.Y.Z_amd64.deb.sha256
+```
+
+## Utilisation
+
+Clic droit sur une sélection (fichiers et/ou dossiers) ou sur le fond d'un
+dossier → **Convertir les images…**. L'IHM peut aussi être lancée
+manuellement, hors Nautilus :
+
+```bash
+convert-images-gui ~/Photos/img001.cr2 ~/Photos/img002.jpg
+```
+
+## Formats
+
+| | Formats |
+|---|---|
+| **Sources** | RAW (CR2/CR3, NEF/NRW, ARW/SRF/SR2, DNG, ORF, RAF, RW2, PEF, SRW, X3F, 3FR, RWL, GPR…), JPEG, PNG, TIFF, BMP, GIF, WebP |
+| **Destinations** | JPEG (qualité réglable, 100 par défaut), PNG, TIFF (non compressé), BMP, WebP sans perte (VP8L) |
+
+PNG, TIFF, BMP et WebP sont **authentiquement sans perte**, vérifié par
+comparaison pixel à pixel (canal alpha et 16 bits compris). JPEG reste par
+nature un format avec perte — limite du format lui-même, pas de cet outil,
+et jamais présentée comme autre chose. La détection se fait par extension,
+puis par analyse du contenu, avec en dernier recours une tentative de
+décodage réel. Les RAW sont décodés à pleine résolution (zone active du
+capteur).
 
 Le moteur, l'extension et l'IHM sont découplés (voir `ARCHITECTURE.md`) :
 le moteur (`convert-images-engine`) est un exécutable CLI autonome,
@@ -44,9 +95,10 @@ utilisable indépendamment de Nautilus ou de GTK.
 
 ## Getting set up
 
+Pour compiler depuis les sources :
+
 ```bash
-mkdir -p ~/Projects
-unzip nautilus-convert-images.zip -d ~/Projects/nautilus-convert-images
+git clone https://github.com/gillesmagneville/nautilus-convert-images.git ~/Projects/nautilus-convert-images
 cd ~/Projects/nautilus-convert-images
 cargo build
 ```
@@ -59,37 +111,25 @@ sudo apt-get install rustc cargo libgtk-4-dev python3-gi gir1.2-gtk-4.0 \
     python3-nautilus pkg-config build-essential
 ```
 
-Si vous versionnez ceci avec git, le `.gitignore` exclut déjà `target/`
-et les paquets générés (`*.deb`, `*.rpm`) :
-
-```bash
-git init
-git add .
-git commit -m "Scaffold initial : moteur Rust, extension Nautilus, IHM GTK4"
-```
-
 ## Packaging
 
 Deux scripts construisent des paquets natifs via
 [fpm](https://fpm.readthedocs.io/) — `build-deb.sh` (Debian/Ubuntu) et
-`build-rpm.sh` (Fedora/RHEL/Rocky/AlmaLinux/openSUSE). Les deux suivent le
-même flux : choix d'un incrément de version (interactif ou par flag),
-compilation en mode release, staging du moteur + de l'IHM + de
-l'extension + de la documentation, puis empaquetage. `VERSION` et
-`Cargo.toml` ne sont mis à jour qu'après un build entièrement réussi — une
-compilation ou un `fpm` en échec laisse le dépôt inchangé. Une brève
-confirmation est demandée avant de construire, sauf si un flag de version
-a déjà été fourni sans terminal interactif attaché à stdin (contexte
-script/CI — le flag lui-même vaut confirmation) ou si `--yes`/`-y` est
-passé explicitement. Lancer sans flag de version et sans terminal
-interactif disponible échoue immédiatement avec un message clair, plutôt
-que de rester bloqué ou d'échouer silencieusement. Le nom du fichier
-`.rpm` généré contient un suffixe `-1` après le numéro de version (ex.
+`build-rpm.sh` (Fedora/RHEL/Rocky/AlmaLinux). Les deux suivent le même
+flux : choix d'un incrément de version (interactif ou par flag),
+compilation en mode release, staging du moteur + de l'IHM + de l'extension
++ de la documentation, puis empaquetage. `VERSION` et `Cargo.toml` ne sont
+mis à jour qu'après un build entièrement réussi — une compilation ou un
+`fpm` en échec laisse le dépôt inchangé. Une brève confirmation est
+demandée avant de construire, sauf si un flag de version a déjà été fourni
+sans terminal interactif attaché à stdin (contexte script/CI — le flag
+lui-même vaut confirmation) ou si `--yes`/`-y` est passé explicitement.
+Lancer sans flag de version et sans terminal interactif disponible échoue
+immédiatement avec un message clair. Le nom du fichier `.rpm` généré
+contient un suffixe `-1` après le numéro de version (ex.
 `nautilus-convert-images-1.2.3-1.x86_64.rpm`) — c'est le champ « Release »
-du format RPM (distinct de « Version » dans la convention NEVRA), fixé à
-1 par défaut par `fpm`. Le format `.deb` n'a pas cette notion, d'où
-l'absence de ce suffixe côté `build-deb.sh`. Ni `VERSION` ni `Cargo.toml`
-ne contiennent jamais ce suffixe.
+du format RPM, fixé à 1 par défaut par `fpm`. Le format `.deb` n'a pas
+cette notion. Ni `VERSION` ni `Cargo.toml` ne contiennent jamais ce suffixe.
 
 ```bash
 ./build-deb.sh --patch   # ou --minor / --major / --no-version-change
@@ -98,29 +138,32 @@ ne contiennent jamais ce suffixe.
 ./build-deb.sh --clean         # supprime les artefacts de build et les .deb générés
 ```
 
-Avant la première utilisation, modifiez `MAINTAINER` et `URL` en haut de
-chaque script — ce sont des valeurs à personnaliser. Les deux scripts
-vérifient la présence des outils requis (`fpm`, `cargo`, et `dpkg-deb` ou
-`rpmbuild` respectivement) et expliquent quoi installer si quelque chose
-manque — lisez ce message attentivement : sur un « aucun incrément de
-version n'a eu lieu » silencieux, la cause la plus probable est un
-contrôle d'outil en échec (par exemple `fpm` pas réellement installé — il
-s'installe avec `gem install --user-install fpm`, pas un paquet de
-distribution) plutôt qu'un bug dans l'arithmétique de version, puisqu'un
+`MAINTAINER` et `URL`, en haut de chaque script, sont déjà renseignés pour
+ce dépôt ; adaptez-les dans un fork. Les deux scripts vérifient la présence
+des outils requis (`fpm`, `cargo`, et `dpkg-deb` ou `rpmbuild`
+respectivement) et expliquent quoi installer si quelque chose manque —
+lisez ce message attentivement : sur un « aucun incrément de version n'a eu
+lieu » silencieux, la cause la plus probable est un contrôle d'outil en
+échec (par exemple `fpm` pas réellement installé — il s'installe avec
+`gem install --user-install fpm`, pas un paquet de distribution), puisqu'un
 incrément n'est jamais écrit avant qu'un build ait entièrement réussi.
 
-**`VERSION` est volontairement absent de cette livraison de code
-source.** Comme pour `linuxdoctor`, ce fichier vous appartient
-localement : chaque lancement réussi de `build-deb.sh`/`build-rpm.sh` le
-fait avancer sur votre machine, en suivant votre propre historique de
-build entre deux mises à jour depuis ici. Si `VERSION` (et le champ
-`version` correspondant dans `Cargo.toml`) étaient inclus et rafraîchis à
-chaque mise à jour des sources, extraire une nouvelle version de code par-
-dessus votre projet existant ferait silencieusement reculer votre version
-locale à ce que cette livraison a fixé en dernier — aucun des deux
-fichiers n'est donc livré ici. Si `VERSION` est totalement absent (une
-extraction neuve, sans build local encore fait), les deux scripts
-démarrent `CURRENT_VERSION` à `0.1.0` et incrémentent à partir de là.
+`VERSION` est versionné avec le code : il correspond au tag de la dernière
+release.
+
+### Publier une release
+
+Après les builds habituels (`VERSION` à jour, `.deb` et `.rpm` générés),
+`release.sh` publie la release GitHub correspondante : contrôles
+préalables, reconstruction des paquets si nécessaire, commit et push de
+`main`, puis création de la release avec les deux paquets et un fichier
+`.sha256` par paquet. Il nécessite [`gh`](https://cli.github.com/)
+authentifié.
+
+```bash
+./release.sh --dry-run   # aperçu, rien n'est modifié ni publié
+./release.sh
+```
 
 ## Runtime dependencies
 
@@ -130,10 +173,12 @@ aucune dépendance à `libraw` (voir « Philosophie des dépendances » dans
 `ARCHITECTURE.md`). L'IHM et l'extension nécessitent, au moment de
 l'exécution : `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (noms de
 paquets Debian/Ubuntu ; `python3-gobject`, `gtk4`, `nautilus-python` sur
-Fedora/openSUSE) — déjà déclarés comme dépendances par les deux scripts de
+Fedora) — déjà déclarés comme dépendances par les deux scripts de
 packaging.
 
 ## Quickstart
+
+Le moteur s'utilise aussi seul, en ligne de commande :
 
 ```bash
 cargo build --release
@@ -143,16 +188,6 @@ cargo build --release
     --output-dir ~/Photos/converti --format png
 ```
 
-Une fois installé (via `.deb`/`.rpm`, ou manuellement — voir
-`ARCHITECTURE.md` pour les chemins exacts), la conversion se fait
-normalement depuis Nautilus : clic droit sur une sélection ou sur le fond
-d'un dossier → **Convertir les images…**. L'IHM peut aussi être lancée
-manuellement, hors Nautilus :
-
-```bash
-./nautilus-extension/convert-images-gui ~/Photos/img001.cr2 ~/Photos/img002.jpg
-```
-
 ## Tests
 
 Le moteur a été validé par comparaison pixel à pixel (PNG/TIFF/BMP/WebP
@@ -160,8 +195,8 @@ identiques bit à bit à la source, y compris avec canal alpha et
 profondeur 16 bits ; JPEG avec un écart minime et attendu à qualité 100),
 l'extension Nautilus avec les vraies bibliothèques GObject Introspection,
 et l'IHM par un scénario de bout en bout sous Xvfb (détection →
-conversion → fichiers produits). Le décodage RAW a, lui, été validé en usage réel avec des fichiers
-d'appareils photo.
+conversion → fichiers produits). Le décodage RAW a, lui, été validé en
+usage réel avec des fichiers d'appareils photo.
 
 ```bash
 cargo build --release && ./target/release/convert-images-engine formats
@@ -197,11 +232,12 @@ projet, seulement du toolchain de test.
 ```
 nautilus-convert-images/
 ├── .gitignore
-├── VERSION                  # absent de cette livraison — voir « Packaging »
+├── VERSION                  # version courante (= tag de la dernière release)
 ├── CHANGELOG.md              # format Keep a Changelog
 ├── CONTRIBUTING.md            # signaler un bug, ajouter un format, style de code
 ├── build-deb.sh                 # empaquetage .deb (fpm)
 ├── build-rpm.sh                   # empaquetage .rpm (fpm)
+├── release.sh                       # publication de la release GitHub
 ├── Cargo.toml
 ├── Cargo.lock
 ├── README.md
