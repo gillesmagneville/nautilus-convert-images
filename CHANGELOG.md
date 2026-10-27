@@ -14,6 +14,26 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
 
 ## [Non publié]
 
+## 2026-10-27
+
+Version de maintenance : aucun changement fonctionnel (le moteur,
+l'extension Nautilus et l'IHM sont identiques à la version précédente).
+
+### Ajouté
+
+- `release.sh` : publication de la release GitHub (contrôles préalables,
+  reconstruction des paquets si nécessaire, commit et push, création de la
+  release avec les deux paquets et leurs fichiers `.sha256`).
+
+### Changé
+
+- `README.md` : présentation orientée usage (pourquoi l'utiliser, cas
+  d'usage, formats pris en charge), installation par paquets `.deb`/`.rpm`
+  et vérification des téléchargements ; retrait des passages obsolètes
+  (livraison par archive, `VERSION` « absent »).
+- Publication : chaque paquet est publié avec son propre fichier `.sha256`
+  (il n'y a plus de `SHA256SUMS` global).
+
 ## 2026-10-26
 
 Première release stable publiée sur GitHub (tag `v1.1.0`, paquets `.deb` et `.rpm`).

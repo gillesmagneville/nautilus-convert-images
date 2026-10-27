@@ -92,7 +92,17 @@ fi
 VERSION="$(tr -d '[:space:]' < VERSION)"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "VERSION invalide : '$VERSION' (attendu X.Y.Z)."
 TAG="v$VERSION"
-info "Version : $VERSION  ->  tag $TAG"
+PREV_TAG="$(git tag -l 'v[0-9]*' --sort=-v:refname | grep -vxF "$TAG" | head -1 || true)"
+if [ -n "$PREV_TAG" ]; then
+  FIRST_RELEASE=false
+  [ "$(printf '%s\n%s\n' "${PREV_TAG#v}" "$VERSION" | sort -V | tail -1)" = "$VERSION" ] \
+    || die "VERSION ($VERSION) n'est pas superieure a la derniere release ($PREV_TAG)."
+  info "Version : $VERSION  ->  tag $TAG  (derniere release : $PREV_TAG)"
+else
+  FIRST_RELEASE=true
+  info "Version : $VERSION  ->  tag $TAG  (premiere release)"
+fi
+export FIRST_RELEASE
 
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
   die "le tag $TAG existe deja en local."
@@ -134,6 +144,9 @@ TODAY="$(date +%F)"
 export VERSION TODAY
 
 RAW_TESTED="${RAW_TESTED:-}"
+if [ -z "$RAW_TESTED" ] && grep -q "Le décodage RAW a, lui, été validé" README.md; then
+  RAW_TESTED=1   # deja declare lors d'une release precedente (voir README.md)
+fi
 if [ -z "$RAW_TESTED" ]; then
   if ! $ASSUME_YES && [ -t 0 ]; then
     read -r -p "Un vrai fichier RAW d'appareil photo a-t-il deja ete converti avec succes ? [o/N] " a
@@ -168,6 +181,7 @@ apply_ = os.environ["APPLY"] == "1"
 version = os.environ["VERSION"]
 today = os.environ["TODAY"]
 raw_tested = os.environ["RAW_TESTED"] == "1"
+first = os.environ["FIRST_RELEASE"] == "true"
 maint = os.environ.get("MAINT", "")
 changes = []
 
@@ -212,8 +226,14 @@ def changelog(s):
     marker = f"tag `v{version}`"
     if marker in s:
         return s
-    para = f"Première release stable publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`)."
-    if re.search(r'^## ' + re.escape(today) + r'[ \t]*$', s, flags=re.M):
+    has_today = re.search(r'^## ' + re.escape(today) + r'[ \t]*$', s, flags=re.M)
+    if first:
+        para = f"Première release stable publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`)."
+    elif has_today:
+        return s  # section du jour déjà rédigée à la main : on n'y touche pas
+    else:
+        para = f"Release stable `v{version}` publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`)."
+    if has_today:
         return re.sub(r'(^## ' + re.escape(today) + r'[ \t]*\n)',
                       lambda m: m.group(1) + "\n" + para + "\n", s, count=1, flags=re.M)
     return s.replace("## [Non publié]\n", f"## [Non publié]\n\n## {today}\n\n{para}\n", 1)
@@ -318,7 +338,20 @@ $NEED_REBUILD || info "Paquets existants a jour et conformes : ils seront publie
 # Notes de release
 # ------------------------------------------------------------
 NOTES="$WORK/notes.md"
+
+# Texte de la section datee du jour dans CHANGELOG.md (vide si absente).
+changelog_section() {
+  python3 -I - "$TODAY" <<'PY'
+import re, sys
+today = sys.argv[1]
+s = open("CHANGELOG.md", encoding="utf-8").read()
+m = re.search(r'^## ' + re.escape(today) + r'[ \t]*\n(.*?)(?=^## |\Z)', s, flags=re.M | re.S)
+print(m.group(1).strip() if m else "")
+PY
+}
+
 {
+if $FIRST_RELEASE; then
 cat <<EOF
 # nautilus-convert-images $TAG
 
@@ -332,6 +365,17 @@ Première release stable : conversion d'images **sans perte** directement depuis
 - **Conversion parallèle** (moteur Rust, décodage RAW en Rust pur, sans libraw).
 - **Bouton Quitter**, avec avertissement si des conversions sont encore en cours.
 - Compatible avec les versions 4.0 et 4.1 de la bibliothèque Nautilus.
+EOF
+else
+SECTION="$(changelog_section)"
+printf '# %s %s\n\n## Nouveautés depuis %s\n\n' "$PKG" "$TAG" "$PREV_TAG"
+if [ -n "$SECTION" ]; then
+  printf '%s\n' "$SECTION"
+else
+  echo "Voir le CHANGELOG pour le détail."
+fi
+fi
+cat <<EOF
 
 ## Installation
 
@@ -380,7 +424,7 @@ step "Plan"
 info "1. $($NEED_REBUILD && echo 'reconstruire .deb et .rpm (build-*.sh --no-version-change --yes)' || echo 'aucune reconstruction')"
 info "2. commit + push de main (etat actuel :)"
 git status --short | sed 's/^/         /'
-info "3. creer la release $TAG sur $REPO_SLUG (stable, 'latest') avec : $DEB, $RPM, $DEB_SUM, $RPM_SUM"
+info "3. creer la release $TAG (apres ${PREV_TAG:-aucune release precedente}) sur $REPO_SLUG (stable, 'latest') avec : $DEB, $RPM, $DEB_SUM, $RPM_SUM"
 
 if $DRY_RUN; then
   printf '\n[dry-run] Rien n'"'"'a ete modifie, committe, pousse ni publie.\n'
@@ -427,8 +471,12 @@ sha256sum "$RPM" > "$WORK/$RPM_SUM"
 step "Commit et push sur main"
 if [ -n "$(git status --porcelain)" ]; then
   git add -A
-  git commit -q -m "Release $TAG" \
-             -m "Correctifs Nautilus 4.1 (typelib), JPEG par défaut, bouton Quitter avec avertissement, dépendances RPM Fedora/RHEL, maintainer réel et documentation à jour."
+  if $FIRST_RELEASE; then
+    git commit -q -m "Release $TAG" \
+               -m "Correctifs Nautilus 4.1 (typelib), JPEG par défaut, bouton Quitter avec avertissement, dépendances RPM Fedora/RHEL, maintainer réel et documentation à jour."
+  else
+    git commit -q -m "Release $TAG" -m "Voir CHANGELOG.md."
+  fi
   info "Commit créé : $(git rev-parse --short HEAD)"
 else
   info "Rien à valider."
