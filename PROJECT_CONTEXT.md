@@ -88,7 +88,8 @@ graphique ne s'ouvre qu'à la demande, pour cette seule tâche.
 
 ## 5. Rapide
 
-Le décodage et l'encodage utilisent du code natif (Rust) et exploitent tous
+Le décodage et l'encodage utilisent du code natif (Rust, avec LibRaw en C++
+en secours pour les RAW) et exploitent tous
 les cœurs disponibles pour les conversions par lot. Aucune conversion ne
 doit sembler plus lente que d'ouvrir l'image dans une visionneuse.
 
@@ -127,8 +128,9 @@ Distributions visées :
 * toute distribution basée sur GNOME avec `nautilus-python` disponible
 
 Architecture : x86_64 en priorité ; ARM64 dans la mesure où les dépendances
-Rust utilisées (Rust pur, sans `libraw`) s'y compilent sans adaptation
-particulière.
+Rust utilisées s'y compilent sans adaptation particulière. LibRaw (C++,
+embarquée dans `vendor/` et compilée avec `g++`, utilisée en secours) devrait
+aussi s'y compiler, mais cela n'a pas été vérifié.
 
 ---
 

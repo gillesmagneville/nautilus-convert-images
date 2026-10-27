@@ -93,8 +93,10 @@ capteur).
 (typiquement un boîtier absent de sa base), repli automatique sur
 [LibRaw](https://www.libraw.org/), embarquée dans le programme. Si les deux
 échouent, l'erreur est affichée pour ce fichier et le lot continue avec le
-suivant. Le rendu du repli (balance des blancs de l'appareil, sRGB) peut
-diffèrer légèrement du décodeur principal.
+suivant. Le rendu du repli est neutre (balance des blancs de l'appareil,
+sRGB, sans courbe de contraste ni correction d'objectif) : il paraît donc
+moins contrasté que l'aperçu JPEG du boîtier, aux coins plus sombres, et peut
+différer légèrement du décodeur principal.
 
 Le moteur, l'extension et l'IHM sont découplés (voir `ARCHITECTURE.md`) :
 le moteur (`convert-images-engine`) est un exécutable CLI autonome,
@@ -207,8 +209,10 @@ profondeur 16 bits ; JPEG avec un écart minime et attendu à qualité 100),
 l'extension Nautilus avec les vraies bibliothèques GObject Introspection,
 et l'IHM par un scénario de bout en bout sous Xvfb (détection →
 conversion → fichiers produits). Le repli LibRaw est couvert par des
-tests unitaires (`cargo test`) sur un DNG synthétique ; la fidélité sur de
-vrais fichiers d'appareils est validée au cas par cas.
+tests unitaires (`cargo test`) sur un DNG synthétique, et a été vérifié sur
+de vrais fichiers `.arw` du Sony DSC-RX100M6 (absent de la base de
+`rawloader`) ; la fidélité sur les autres appareils est validée au cas par
+cas.
 
 ```bash
 cargo build --release && ./target/release/convert-images-engine formats
