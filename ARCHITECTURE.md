@@ -142,6 +142,16 @@ recadrage ni redimensionnement), balance des blancs de l'appareil
 pas de luminosité automatique (`no_auto_bright = 1`), 8 ou 16 bits selon le
 format cible. Le rendu peut différer légèrement de celui d'`imagepipe`.
 
+Options facultatives de LibRaw **non compilées** (`build.rs` ne définit ni
+`USE_JPEG`, `USE_ZLIB`, `USE_X3FTOOLS`, `USE_DNGSDK` ni `USE_RAWSPEED`) : le
+repli ne lit donc pas les DNG compressés avec perte (JPEG) ni les DNG à
+virgule flottante compressés (deflate), ni les Sigma Foveon (X3F), que
+`rawloader` décode seul pour les modèles qu'il connaît. Le CR3, absent de
+`rawloader`, ne passe que par LibRaw (`crx.cpp` et `cr3_parser.cpp` sont
+compilés) ; il n'a pas été testé sur de vrais fichiers. Activer ces options
+exigerait `libjpeg`/`zlib` à la compilation : à envisager si des fichiers
+réels l'imposent.
+
 ## Conversion (`convert.rs`)
 
 ```rust

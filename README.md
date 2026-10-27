@@ -3,7 +3,7 @@
 # nautilus-convert-images
 
 **Convertissez vos photos d'un clic droit, directement depuis Nautilus —
-RAW compris, sans perte, sans recadrage ni redimensionnement.**
+RAW compris, en pleine résolution, sans recadrage ni redimensionnement.**
 
 [![Dernière release](https://img.shields.io/github/v/release/gillesmagneville/nautilus-convert-images)](https://github.com/gillesmagneville/nautilus-convert-images/releases/latest)
 [![Licence GPL-3.0](https://img.shields.io/badge/licence-GPL--3.0-blue)](LICENSE)
@@ -17,14 +17,14 @@ les principes, `ARCHITECTURE.md` pour le contrat technique.
 
 * **Aucun détour** — pas d'application à lancer, pas de ligne de commande,
   pas d'import : la conversion est dans le menu contextuel de vos fichiers.
-* **Tout ce que vous avez sous la main** — RAW (Canon, Nikon, Sony,
-  Fujifilm, Olympus, Panasonic, Pentax, Sigma, Adobe DNG…), JPEG, PNG,
-  TIFF, BMP, GIF, WebP, y compris mélangés dans un même dossier : le format
-  de chaque fichier est détecté, même quand l'extension est absente ou
-  trompeuse.
+* **Tout ce que vous avez sous la main** — RAW de nombreux boîtiers (voir
+  « Compatibilité RAW »), JPEG, PNG, TIFF, BMP, GIF, WebP, y compris
+  mélangés dans un même dossier : le format de chaque fichier est détecté,
+  même quand l'extension est absente ou trompeuse.
 * **Votre qualité, intacte** — pleine résolution, jamais de recadrage ni de
   redimensionnement ; PNG, TIFF, BMP et WebP sont réellement sans perte
-  (transparence et profondeur 16 bits conservées).
+  (transparence et profondeur 16 bits conservées). Pour un RAW, cela vaut
+  pour l'image développée, pas pour le fichier d'origine : conservez-le.
 * **Rapide** — moteur en Rust, tous les cœurs du processeur travaillent en
   parallèle sur les lots.
 * **Sous contrôle** — vous voyez ce qui a été détecté avant de lancer,
@@ -37,7 +37,7 @@ les principes, `ARCHITECTURE.md` pour le contrat technique.
 | Vous avez | Vous voulez | Il suffit de |
 |---|---|---|
 | Un dossier de RAW après un shooting | Des JPEG à partager | le sélectionner, choisir JPEG (le choix par défaut) |
-| Des RAW à archiver | Un format sans perte | choisir TIFF ou PNG |
+| Des RAW à passer dans un autre logiciel | Une image sans perte | choisir TIFF ou PNG (16 bits), et garder le RAW |
 | Un dossier qui mélange CR2, TIFF et PNG | Un seul format partout | tout sélectionner, choisir le format |
 | Des BMP ou PNG volumineux | Des fichiers plus compacts, sans perte | choisir WebP sans perte |
 
@@ -78,7 +78,7 @@ convert-images-gui ~/Photos/img001.cr2 ~/Photos/img002.jpg
 
 | | Formats |
 |---|---|
-| **Sources** | RAW (CR2/CR3, NEF/NRW, ARW/SRF/SR2, DNG, ORF, RAF, RW2, PEF, SRW, X3F, 3FR, RWL, GPR…), JPEG, PNG, TIFF, BMP, GIF, WebP |
+| **Sources** | RAW (extensions reconnues : CR2/CR3, NEF/NRW, ARW/SRF/SR2, DNG, ORF, RAF, RW2, PEF, SRW, X3F, 3FR, RWL, GPR… ; voir « Compatibilité RAW »), JPEG, PNG, TIFF, BMP, GIF, WebP |
 | **Destinations** | JPEG (qualité réglable, 100 par défaut), PNG, TIFF (non compressé), BMP, WebP sans perte (VP8L) |
 
 PNG, TIFF, BMP et WebP sont **authentiquement sans perte**, vérifié par
@@ -89,18 +89,39 @@ puis par analyse du contenu, avec en dernier recours une tentative de
 décodage réel. Les RAW sont décodés à pleine résolution (zone active du
 capteur).
 
-**Décodage RAW :** `rawloader` d'abord ; si le fichier ne peut pas être lu
-(typiquement un boîtier absent de sa base), repli automatique sur
-[LibRaw](https://www.libraw.org/), embarquée dans le programme. Si les deux
-échouent, l'erreur est affichée pour ce fichier et le lot continue avec le
-suivant. Le rendu du repli est neutre (balance des blancs de l'appareil,
-sRGB, sans courbe de contraste ni correction d'objectif) : il paraît donc
-moins contrasté que l'aperçu JPEG du boîtier, aux coins plus sombres, et peut
-différer légèrement du décodeur principal.
-
 Le moteur, l'extension et l'IHM sont découplés (voir `ARCHITECTURE.md`) :
 le moteur (`convert-images-engine`) est un exécutable CLI autonome,
 utilisable indépendamment de Nautilus ou de GTK.
+
+## Compatibilité RAW
+
+Reconnaître un fichier comme RAW (par son extension) ne garantit pas de
+pouvoir le décoder : cela dépend de l'appareil.
+
+* **Ordre de décodage** — `rawloader` d'abord ; s'il ne connaît pas le
+  boîtier, repli automatique sur [LibRaw](https://www.libraw.org/),
+  embarquée dans le programme. Si les deux échouent, l'erreur est affichée
+  pour ce fichier et le lot continue avec le suivant.
+* **Testé en usage réel** — uniquement des fichiers Sony ARW, dont ceux du
+  RX100 VI (absent de la base de `rawloader`, donc décodé par le repli).
+  Canon, Nikon, Fujifilm, Olympus, Panasonic, Pentax, Sigma, DNG… sont pris
+  en charge d'après ce qu'annoncent `rawloader` et LibRaw, mais n'ont pas
+  été vérifiés par l'auteur ; la fidélité des couleurs peut varier d'un
+  boîtier à l'autre.
+* **Limites du repli LibRaw** — il est compilé sans les bibliothèques
+  facultatives : il ne lit ni les DNG compressés avec perte (JPEG) ou en
+  virgule flottante compressée (deflate), ni les Sigma Foveon (X3F ;
+  `rawloader` en lit certains). Le CR3 de Canon n'existe pas dans
+  `rawloader` : il dépend donc entièrement du repli, et n'a pas été testé.
+* **Rendu** — c'est une conversion, pas un logiciel de développement. Le
+  repli LibRaw applique la balance des blancs du boîtier et le sRGB, sans
+  courbe de contraste ni correction d'objectif : l'image est plus neutre
+  que l'aperçu JPEG du boîtier, avec des coins plus sombres. Le décodeur
+  principal peut rendre légèrement différemment. Pour un résultat travaillé,
+  utilisez un logiciel de développement (darktable, RawTherapee…).
+* **Fichier refusé ou aux couleurs douteuses ?** Signalez-le via les
+  [issues](https://github.com/gillesmagneville/nautilus-convert-images/issues)
+  en indiquant le modèle d'appareil.
 
 ## Getting set up
 
