@@ -98,6 +98,17 @@ utilisable indépendamment de Nautilus ou de GTK.
 Reconnaître un fichier comme RAW (par son extension) ne garantit pas de
 pouvoir le décoder : cela dépend de l'appareil.
 
+* **Une conversion, pas un développement** — pour un fichier RAW en
+  entrée, le rendu est celui des données brutes du boîtier : balance des
+  blancs de l'appareil et conversion en sRGB, sans retouche (pas de
+  correction d'objectif — vignetage, distorsion —, pas de netteté ni de
+  réduction de bruit, pas de réglage créatif d'exposition ou de contraste).
+  Ce n'est donc ni le rendu du JPEG du boîtier (plus contrasté, coins
+  corrigés, parfois recadré en 16:9 alors que l'image convertie couvre tout
+  le capteur), ni celui d'un logiciel de développement comme darktable ou
+  RawTherapee, qui ajoutent leurs propres réglages par défaut. Pour un
+  résultat travaillé, convertissez en TIFF ou PNG 16 bits et retouchez dans
+  un tel logiciel.
 * **Ordre de décodage** — `rawloader` d'abord ; s'il ne connaît pas le
   boîtier, repli automatique sur [LibRaw](https://www.libraw.org/),
   embarquée dans le programme. Si les deux échouent, l'erreur est affichée
@@ -113,12 +124,12 @@ pouvoir le décoder : cela dépend de l'appareil.
   virgule flottante compressée (deflate), ni les Sigma Foveon (X3F ;
   `rawloader` en lit certains). Le CR3 de Canon n'existe pas dans
   `rawloader` : il dépend donc entièrement du repli, et n'a pas été testé.
-* **Rendu** — c'est une conversion, pas un logiciel de développement. Le
-  repli LibRaw applique la balance des blancs du boîtier et le sRGB, sans
-  courbe de contraste ni correction d'objectif : l'image est plus neutre
-  que l'aperçu JPEG du boîtier, avec des coins plus sombres. Le décodeur
-  principal peut rendre légèrement différemment. Pour un résultat travaillé,
-  utilisez un logiciel de développement (darktable, RawTherapee…).
+* **Deux décodeurs, deux rendus** — le décodeur principal (`imagepipe`)
+  applique une courbe de tons de base légère pour passer du signal linéaire
+  du capteur à un aspect naturel ; le repli LibRaw n'en applique pas et ses
+  images tendent à paraître plus sombres. Un lot qui mêle des boîtiers
+  traités par l'un et par l'autre peut donc présenter des luminosités un
+  peu différentes.
 * **Fichier refusé ou aux couleurs douteuses ?** Signalez-le via les
   [issues](https://github.com/gillesmagneville/nautilus-convert-images/issues)
   en indiquant le modèle d'appareil.

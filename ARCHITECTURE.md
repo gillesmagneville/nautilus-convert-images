@@ -140,7 +140,11 @@ Réglages LibRaw (`libraw.rs`) : pleine résolution (`half_size = 0`, aucun
 recadrage ni redimensionnement), balance des blancs de l'appareil
 (`use_camera_wb = 1`), sortie sRGB avec courbe sRGB (`gamm = 1/2.4, 12.92`),
 pas de luminosité automatique (`no_auto_bright = 1`), 8 ou 16 bits selon le
-format cible. Le rendu peut différer légèrement de celui d'`imagepipe`.
+format cible. Contrairement à `imagepipe`, qui applique une courbe de base
+sur la luminance (`basecurve`, point 0,50 → 0,60, « pour passer du linéaire
+à un aspect plus naturel »), LibRaw n'applique aucune courbe de tons : le
+rendu du repli est plus sombre. Ni l'un ni l'autre ne fait de correction
+d'objectif, de netteté ni de réduction de bruit.
 
 Options facultatives de LibRaw **non compilées** (`build.rs` ne définit ni
 `USE_JPEG`, `USE_ZLIB`, `USE_X3FTOOLS`, `USE_DNGSDK` ni `USE_RAWSPEED`) : le
