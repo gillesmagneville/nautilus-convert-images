@@ -81,7 +81,8 @@ nautilus-convert-images/
 │   ├── test_i18n.py                 # catalogues, messages du moteur, IHM par langue
 │   ├── test_gui_log.py              # une ligne longue du journal passe à la ligne
 │   ├── gui_smoke.py                  # lance la vraie IHM sous Xvfb et rapporte ce qu'elle affiche
-│   └── gui_log_wrap.py               # mesure la mise en page du journal dans la vraie IHM
+│   ├── gui_log_wrap.py               # mesure la mise en page du journal dans la vraie IHM
+│   └── fedora/                       # teste le .rpm dans un vrai Fedora (podman/docker), voir CONTRIBUTING.md
 │
 └── packaging/
     ├── nautilus-convert-images.desktop  # lancement manuel de l'IHM hors menu contextuel

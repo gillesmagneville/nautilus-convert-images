@@ -12,6 +12,18 @@ appartient à votre environnement local, avancé uniquement par vos propres
 lancements réussis de `build-deb.sh`/`build-rpm.sh`. Les entrées de ce
 changelog utilisent donc une date plutôt qu'un numéro de version.
 
+## [Non publié]
+
+### Ajouté
+
+- **Test du paquet `.rpm` dans un vrai Fedora** (`tests/fedora/test-fedora.sh`) :
+  lance un conteneur Fedora (podman ou docker), y installe le `.rpm` avec `dnf`,
+  vérifie son contenu, le moteur, GTK 4 et l'extension Nautilus (vraies liaisons
+  `nautilus-python`), fait tourner l'interface complète sous Xvfb dans les
+  quatre langues, puis désinstalle. Si GTK 4 est inutilisable, il identifie le
+  paquet manquant. À lancer avant de publier une release (voir
+  `CONTRIBUTING.md`).
+
 ## 2026-10-28 — v1.3.1
 
 ### Corrigé

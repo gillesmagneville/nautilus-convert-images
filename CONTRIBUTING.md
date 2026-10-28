@@ -121,6 +121,32 @@ CONVERT_IMAGES_LOCALEDIR=/tmp/locale LANGUAGE=it \
   « Internationalisation » dans `ARCHITECTURE.md`, notamment pour les
   messages du moteur.
 
+## Tester le paquet `.rpm` dans un vrai Fedora
+
+Avant de publier une release, le `.rpm` se teste dans un vrai Fedora, sans rien
+installer sur votre machine, grâce à un conteneur (podman ou docker) :
+
+```bash
+sudo apt install podman                 # une seule fois
+tests/fedora/test-fedora.sh             # prend le .rpm présent à la racine du dépôt
+tests/fedora/test-fedora.sh nautilus-convert-images-X.Y.Z-1.x86_64.rpm 43   # autre fichier, autre version de Fedora
+```
+
+Le script installe le paquet avec `dnf` (c'est Fedora qui résout les
+dépendances), vérifie son contenu, lance le moteur, contrôle GTK 4 et
+l'extension Nautilus avec les vraies liaisons de `nautilus-python`, fait tourner
+l'interface complète sous Xvfb dans les quatre langues, puis désinstalle. Il
+se termine par `RÉSULTAT : TOUT EST OK` (suivi du nombre de vérifications réussies).
+
+Si GTK 4 est inutilisable, le test cherche tout seul quel paquet Fedora manque
+et le signale (`DÉPENDANCE MANQUANTE AU PAQUET`) : c'est ainsi qu'a été trouvée
+la dépendance `gobject-introspection`, ajoutée en v1.3.1.
+
+Ce test a besoin du réseau (image Fedora, paquets `dnf`) : il n'est pas lancé
+par `unittest discover`. Il valide l'installation et l'interface, mais pas un
+clic réel dans une session Nautilus ; il ne remplace donc pas un essai sur un
+bureau Fedora.
+
 ## Style de code
 
 - `cargo fmt` avant de proposer une pull request.

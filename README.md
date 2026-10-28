@@ -362,7 +362,8 @@ nautilus-convert-images/
 │   ├── test_i18n.py                 # catalogs, engine messages, GUI per language
 │   ├── test_gui_log.py              # a long log line wraps instead of overflowing
 │   ├── gui_smoke.py                  # launches the real GUI (under Xvfb) and reports
-│   └── gui_log_wrap.py               # measures the log layout in the real GUI
+│   ├── gui_log_wrap.py               # measures the log layout in the real GUI
+│   └── fedora/                       # tests the .rpm in a real Fedora (podman/docker)
 │
 └── packaging/
     ├── nautilus-convert-images.desktop
