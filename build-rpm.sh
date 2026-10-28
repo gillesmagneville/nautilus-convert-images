@@ -254,6 +254,10 @@ chmod +x "$BUILD_DIR/usr/bin/convert-images-engine"
 chmod +x "$BUILD_DIR/usr/bin/convert-images-gui"
 
 # --- Construction du paquet ---
+# Dependances (noms Fedora) : gobject-introspection fournit les fichiers
+# d'introspection de cairo (cairo-1.0.typelib), indispensables a GTK 4 depuis
+# Python ; ni gtk4 ni python3-gobject ne les installent sur une Fedora
+# minimale (constate sur Fedora 44 : l'interface ne demarrait pas).
 echo ""
 echo ">>> Construction du paquet .rpm (fpm)..."
 rm -f "$PROJECT_DIR"/*.rpm
@@ -268,6 +272,7 @@ if (cd "$PROJECT_DIR" && fpm -s dir -t rpm \
   --depends "python3-gobject" \
   --depends "gtk4" \
   --depends "nautilus-python" \
+  --depends "gobject-introspection" \
   --after-install "$PROJECT_DIR/packaging/postinst" \
   -C "$BUILD_DIR" \
   usr/); then

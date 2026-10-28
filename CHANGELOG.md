@@ -12,7 +12,26 @@ appartient à votre environnement local, avancé uniquement par vos propres
 lancements réussis de `build-deb.sh`/`build-rpm.sh`. Les entrées de ce
 changelog utilisent donc une date plutôt qu'un numéro de version.
 
-## [Non publié]
+## 2026-10-28 — v1.3.1
+
+### Corrigé
+
+- **Paquet `.rpm` : l'interface ne démarrait pas sur une Fedora minimale.**
+  GTK 4 a besoin, depuis Python, du fichier d'introspection de `cairo`
+  (`cairo-1.0.typelib`), fourni par `gobject-introspection` ; ni `gtk4` ni
+  `python3-gobject` ne l'installent. Le menu apparaissait mais un clic ne
+  lançait rien. `gobject-introspection` est maintenant déclaré comme
+  dépendance, et `release.sh` refuse de publier un `.rpm` qui ne le déclare
+  pas. Constaté en installant le `.rpm` de la v1.3.0 dans un vrai Fedora 44
+  (conteneur) ; avec la dépendance, l'installation, l'extension Nautilus et
+  l'interface dans les quatre langues fonctionnent. Le `.deb` n'était pas
+  concerné (il dépend de `gir1.2-gtk-4.0`).
+- **Journal de l'interface : les lignes longues passent à la ligne.** Un chemin
+  ou un message d'erreur détaillé (de plusieurs centaines de caractères) était
+  coupé au bord de la fenêtre et obligeait à faire défiler horizontalement ;
+  il est maintenant coupé aux espaces, ou au caractère pour un chemin sans
+  espace. Nouveau test `tests/test_gui_log.py`, qui mesure la mise en page dans
+  la vraie interface (sous Xvfb).
 
 ### Modifié
 
@@ -20,6 +39,10 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
   `README.md` est la version anglaise et la version française devient
   `README.fr.md` (`README.en.md` disparaît). Les deux sont embarqués dans les
   paquets `.deb` et `.rpm`.
+- **Documentation Fedora / RHEL plus juste** : le `.rpm` est testé sur
+  Fedora 44 ; la famille RHEL 10 (avec EPEL 10) n'est pas testée ; RHEL, Rocky
+  et AlmaLinux 8 et 9 ne sont pas pris en charge (leur `nautilus-python`,
+  1.2.3, est trop ancien pour l'API de Nautilus 4).
 
 ## 2026-10-28 — v1.3.0
 

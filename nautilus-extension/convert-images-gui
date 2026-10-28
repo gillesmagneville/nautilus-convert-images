@@ -298,10 +298,19 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
 
         # --- Journal ---
         self.log_buffer = Gtk.TextBuffer()
-        log_view = Gtk.TextView(buffer=self.log_buffer, editable=False, monospace=True)
+        # Retour à la ligne : un chemin ou un message d'erreur long ne doit pas
+        # sortir de la fenêtre. WORD_CHAR coupe aux espaces quand c'est possible
+        # et, à défaut (un chemin n'a pas d'espaces), au caractère.
+        self.log_view = Gtk.TextView(
+            buffer=self.log_buffer,
+            editable=False,
+            monospace=True,
+            wrap_mode=Gtk.WrapMode.WORD_CHAR,
+        )
         scroller = Gtk.ScrolledWindow()
         scroller.set_vexpand(True)
-        scroller.set_child(log_view)
+        scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroller.set_child(self.log_view)
         scroller.set_visible(False)
         self.log_scroller = scroller
         root.append(scroller)

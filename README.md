@@ -55,9 +55,14 @@ page (`X.Y.Z` = version number), then:
 # Debian, Ubuntu and derivatives
 sudo apt install ./nautilus-convert-images_X.Y.Z_amd64.deb
 
-# Fedora, RHEL and derivatives (nautilus-python comes from EPEL on RHEL/Rocky/Alma)
+# Fedora (tested on Fedora 44)
 sudo dnf install ./nautilus-convert-images-X.Y.Z-1.x86_64.rpm
 ```
+
+The `.rpm` needs `nautilus-python` 4.x (Nautilus 43 or later). `dnf` installs
+it and the other dependencies by itself on Fedora. On the RHEL 10 family it
+comes from EPEL 10 (not tested); RHEL, Rocky Linux and AlmaLinux 8 and 9 are
+not supported, because their `nautilus-python` is too old.
 
 Nautilus is restarted automatically to enable the menu entry. Each package
 is published with its own `.sha256` file (there is no global `SHA256SUMS`).
@@ -246,7 +251,8 @@ what `cargo build` links statically — in particular there is no LibRaw
 library to install: it is statically embedded (see "Philosophie des
 dépendances" in `ARCHITECTURE.md`, in French). The GUI and the extension need, at run time:
 `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (Debian/Ubuntu package
-names; `python3-gobject`, `gtk4`, `nautilus-python` on Fedora) — already
+names; `python3-gobject`, `gtk4`, `gobject-introspection`, `nautilus-python`
+on Fedora) — already
 declared as dependencies by both packaging scripts. The translations add no
 dependency: they rely on the `gettext` module of Python's standard library.
 
@@ -354,7 +360,9 @@ nautilus-convert-images/
 │
 ├── tests/
 │   ├── test_i18n.py                 # catalogs, engine messages, GUI per language
-│   └── gui_smoke.py                  # launches the real GUI (under Xvfb) and reports
+│   ├── test_gui_log.py              # a long log line wraps instead of overflowing
+│   ├── gui_smoke.py                  # launches the real GUI (under Xvfb) and reports
+│   └── gui_log_wrap.py               # measures the log layout in the real GUI
 │
 └── packaging/
     ├── nautilus-convert-images.desktop

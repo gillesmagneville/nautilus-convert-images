@@ -304,6 +304,8 @@ inspect_packages() {
   elif command -v rpm >/dev/null 2>&1; then
     rpm -qpR "$RPM" 2>/dev/null | grep -qE '^(python3-gi|gir1\.2-gtk-4\.0|python3-nautilus)( |$)' \
       && PROBLEMS+=("$RPM : dépendances au nom Debian (invalides sur Fedora/RHEL)")
+    rpm -qpR "$RPM" 2>/dev/null | grep -qE '^gobject-introspection( |$)' \
+      || PROBLEMS+=("$RPM : dépendance gobject-introspection absente (sans elle, l'interface ne démarre pas sur une Fedora minimale)")
     rpm -qp --qf '%{PACKAGER}\n' "$RPM" 2>/dev/null | grep -q 'example.com' \
       && PROBLEMS+=("$RPM : maintainer factice")
     for po in po/*.po; do
@@ -397,7 +399,7 @@ Debian / Ubuntu et dérivés :
 sudo apt install ./${DEB}
 \`\`\`
 
-Fedora / RHEL et dérivés (\`nautilus-python\` est requis ; sur RHEL/Rocky/Alma il vient d'EPEL) :
+Fedora (testé sur Fedora 44 ; \`dnf\` installe lui-même les dépendances). Famille RHEL 10 : \`nautilus-python\` vient d'EPEL 10 (non testé) ; RHEL, Rocky et AlmaLinux 8 et 9 ne sont pas pris en charge (leur \`nautilus-python\` est trop ancien) :
 
 \`\`\`bash
 sudo dnf install ./${RPM}

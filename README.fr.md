@@ -53,9 +53,15 @@ Téléchargez le paquet de votre distribution depuis la page des
 # Debian, Ubuntu et dérivés
 sudo apt install ./nautilus-convert-images_X.Y.Z_amd64.deb
 
-# Fedora, RHEL et dérivés (nautilus-python vient d'EPEL sur RHEL/Rocky/Alma)
+# Fedora (testé sur Fedora 44)
 sudo dnf install ./nautilus-convert-images-X.Y.Z-1.x86_64.rpm
 ```
+
+Le `.rpm` a besoin de `nautilus-python` 4.x (Nautilus 43 ou plus récent).
+Sur Fedora, `dnf` l'installe lui-même avec les autres dépendances. Sur la
+famille RHEL 10, il vient d'EPEL 10 (non testé) ; RHEL, Rocky Linux et
+AlmaLinux 8 et 9 ne sont pas pris en charge, car leur `nautilus-python` est
+trop ancien.
 
 Nautilus est redémarré automatiquement pour activer l'entrée de menu.
 Chaque paquet est publié avec son propre fichier `.sha256` (il n'y a pas
@@ -247,8 +253,8 @@ externe au-delà de ce que `cargo build` lie statiquement — en particulier
 aucune bibliothèque LibRaw à installer : elle est embarquée statiquement
 (voir « Philosophie des dépendances » dans `ARCHITECTURE.md`). L'IHM et l'extension nécessitent, au moment de
 l'exécution : `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (noms de
-paquets Debian/Ubuntu ; `python3-gobject`, `gtk4`, `nautilus-python` sur
-Fedora) — déjà déclarés comme dépendances par les deux scripts de
+paquets Debian/Ubuntu ; `python3-gobject`, `gtk4`, `gobject-introspection`,
+`nautilus-python` sur Fedora) — déjà déclarés comme dépendances par les deux scripts de
 packaging. Les traductions n'ajoutent aucune dépendance : elles reposent
 sur le module `gettext` de la bibliothèque standard de Python.
 
@@ -359,7 +365,9 @@ nautilus-convert-images/
 │
 ├── tests/
 │   ├── test_i18n.py                 # catalogues, messages du moteur, IHM par langue
-│   └── gui_smoke.py                  # lance la vraie IHM (sous Xvfb) et rapporte
+│   ├── test_gui_log.py              # une ligne longue du journal passe à la ligne
+│   ├── gui_smoke.py                  # lance la vraie IHM (sous Xvfb) et rapporte
+│   └── gui_log_wrap.py               # mesure la mise en page du journal dans la vraie IHM
 │
 └── packaging/
     ├── nautilus-convert-images.desktop
