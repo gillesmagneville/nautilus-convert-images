@@ -1,0 +1,321 @@
+# German translation for nautilus-convert-images.
+# Copyright (C) Gilles MAGNEVILLE
+# This file is distributed under the same license as the nautilus-convert-images package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: nautilus-convert-images\n"
+"Report-Msgid-Bugs-To: https://github.com/gillesmagneville/nautilus-convert-"
+"images/issues\n"
+"POT-Creation-Date: 2026-10-27 23:38+0100\n"
+"PO-Revision-Date: 2026-10-27 23:38\n"
+"Last-Translator: Claude (initial translation, to be reviewed by a native "
+"speaker)\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: nautilus-extension/convert-images-gui:51
+msgid "JPEG (lossy, adjustable quality)"
+msgstr "JPEG (verlustbehaftet, einstellbare Qualität)"
+
+#: nautilus-extension/convert-images-gui:52
+msgid "PNG (lossless)"
+msgstr "PNG (verlustfrei)"
+
+#: nautilus-extension/convert-images-gui:53
+msgid "Uncompressed TIFF (lossless)"
+msgstr "Unkomprimiertes TIFF (verlustfrei)"
+
+#: nautilus-extension/convert-images-gui:54
+msgid "BMP (lossless)"
+msgstr "BMP (verlustfrei)"
+
+#: nautilus-extension/convert-images-gui:55
+msgid "Lossless WebP"
+msgstr "Verlustfreies WebP"
+
+#: nautilus-extension/convert-images-gui:59
+msgid "Rename the new file"
+msgstr "Neue Datei umbenennen"
+
+#: nautilus-extension/convert-images-gui:60
+msgid "Skip the file"
+msgstr "Datei überspringen"
+
+#: nautilus-extension/convert-images-gui:61
+msgid "Replace the existing file"
+msgstr "Vorhandene Datei ersetzen"
+
+#: nautilus-extension/convert-images-gui:66
+msgid "Unknown"
+msgstr "Unbekannt"
+
+#: nautilus-extension/convert-images-gui:67
+msgid "Generic RAW"
+msgstr "Generisches RAW"
+
+#. TRANSLATORS: {primary} is the error of the main RAW decoder and {fallback}
+#. the error of LibRaw, the backup decoder tried afterwards.
+#: nautilus-extension/convert-images-gui:78
+#, python-brace-format
+msgid "{primary} ; LibRaw fallback: {fallback}"
+msgstr "{primary} ; LibRaw-Ausweichdecoder: {fallback}"
+
+#: nautilus-extension/convert-images-gui:79
+#, python-brace-format
+msgid "cannot open RAW file: {detail}"
+msgstr "RAW-Datei kann nicht geöffnet werden: {detail}"
+
+#: nautilus-extension/convert-images-gui:80
+#, python-brace-format
+msgid "RAW decoding failed: {detail}"
+msgstr "RAW-Dekodierung fehlgeschlagen: {detail}"
+
+#: nautilus-extension/convert-images-gui:81
+#, python-brace-format
+msgid "decoding failed: {detail}"
+msgstr "Dekodierung fehlgeschlagen: {detail}"
+
+#: nautilus-extension/convert-images-gui:82
+#, python-brace-format
+msgid "could not create the output file: {detail}"
+msgstr "Ausgabedatei konnte nicht erstellt werden: {detail}"
+
+#: nautilus-extension/convert-images-gui:83
+#, python-brace-format
+msgid "could not create the output folder: {detail}"
+msgstr "Zielordner konnte nicht erstellt werden: {detail}"
+
+#. TRANSLATORS: {format} is the target format name (JPEG, PNG, TIFF, BMP, WebP).
+#: nautilus-extension/convert-images-gui:85
+#, python-brace-format
+msgid "{format} encoding failed: {detail}"
+msgstr "{format}-Kodierung fehlgeschlagen: {detail}"
+
+#: nautilus-extension/convert-images-gui:86
+#, python-brace-format
+msgid "{name}: internal decoder error (corrupted file?)"
+msgstr "{name}: interner Decoder-Fehler (beschädigte Datei?)"
+
+#: nautilus-extension/convert-images-gui:87
+msgid "skipped (the destination file already exists)"
+msgstr "übersprungen (die Zieldatei existiert bereits)"
+
+#: nautilus-extension/convert-images-gui:88
+msgid "LibRaw: initialization failed"
+msgstr "LibRaw: Initialisierung fehlgeschlagen"
+
+#: nautilus-extension/convert-images-gui:89
+msgid "invalid path (null byte)"
+msgstr "ungültiger Pfad (Nullbyte)"
+
+#: nautilus-extension/convert-images-gui:90
+#, python-brace-format
+msgid "inconsistent {bits}-bit RAW buffer size"
+msgstr "inkonsistente Größe des {bits}-Bit-RAW-Puffers"
+
+#: nautilus-extension/convert-images-gui:91
+#, python-brace-format
+msgid ""
+"LibRaw: unexpected developed image (type {kind}, {colors} channels, {depth} "
+"bits)"
+msgstr ""
+"LibRaw: unerwartetes entwickeltes Bild (Typ {kind}, {colors} Kanäle, {depth} "
+"Bit)"
+
+#: nautilus-extension/convert-images-gui:92
+#, python-brace-format
+msgid "LibRaw: inconsistent image size ({size} bytes, {expected} expected)"
+msgstr "LibRaw: inkonsistente Bildgröße ({size} Bytes, {expected} erwartet)"
+
+#: nautilus-extension/convert-images-gui:155
+msgid "New folder"
+msgstr "Neuer Ordner"
+
+#: nautilus-extension/convert-images-gui:167
+#, python-brace-format
+msgid "Create in: {folder}"
+msgstr "Erstellen in: {folder}"
+
+#: nautilus-extension/convert-images-gui:170
+msgid "Folder name"
+msgstr "Ordnername"
+
+#. TRANSLATORS: default name proposed for the new destination folder
+#. (a single lowercase word, e.g. "converted").
+#: nautilus-extension/convert-images-gui:173
+msgid "converted"
+msgstr "konvertiert"
+
+#: nautilus-extension/convert-images-gui:182
+#: nautilus-extension/convert-images-gui:519
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: nautilus-extension/convert-images-gui:184
+msgid "Create"
+msgstr "Erstellen"
+
+#: nautilus-extension/convert-images-gui:196
+msgid "The name cannot be empty."
+msgstr "Der Name darf nicht leer sein."
+
+#: nautilus-extension/convert-images-gui:202
+#, python-brace-format
+msgid "Could not create the folder: {error}"
+msgstr "Der Ordner konnte nicht erstellt werden: {error}"
+
+#: nautilus-extension/convert-images-gui:210
+msgid "Convert images"
+msgstr "Bilder konvertieren"
+
+#: nautilus-extension/convert-images-gui:226
+msgid "Analyzing the selected files…"
+msgstr "Die ausgewählten Dateien werden analysiert …"
+
+#: nautilus-extension/convert-images-gui:242
+msgid "Destination format:"
+msgstr "Zielformat:"
+
+#: nautilus-extension/convert-images-gui:250
+msgid "JPEG quality:"
+msgstr "JPEG-Qualität:"
+
+#: nautilus-extension/convert-images-gui:258
+msgid "If the file already exists:"
+msgstr "Falls die Datei bereits existiert:"
+
+#: nautilus-extension/convert-images-gui:265
+msgid "Destination folder:"
+msgstr "Zielordner:"
+
+#: nautilus-extension/convert-images-gui:271
+msgid "Browse…"
+msgstr "Durchsuchen …"
+
+#: nautilus-extension/convert-images-gui:274
+msgid "New folder…"
+msgstr "Neuer Ordner …"
+
+#: nautilus-extension/convert-images-gui:285
+msgid "Cancel conversion"
+msgstr "Konvertierung abbrechen"
+
+#: nautilus-extension/convert-images-gui:289
+msgid "Convert"
+msgstr "Konvertieren"
+
+#: nautilus-extension/convert-images-gui:309
+msgid "Open the destination folder"
+msgstr "Zielordner öffnen"
+
+#: nautilus-extension/convert-images-gui:316
+msgid "Quit"
+msgstr "Beenden"
+
+#: nautilus-extension/convert-images-gui:340
+msgid "No recognized image file in the selection."
+msgstr "Die Auswahl enthält keine erkannte Bilddatei."
+
+#: nautilus-extension/convert-images-gui:348
+#, python-brace-format
+msgid "{n} file detected: {details}"
+msgid_plural "{n} files detected: {details}"
+msgstr[0] "{n} Datei erkannt: {details}"
+msgstr[1] "{n} Dateien erkannt: {details}"
+
+#: nautilus-extension/convert-images-gui:371
+msgid "Choose the destination folder"
+msgstr "Zielordner auswählen"
+
+#: nautilus-extension/convert-images-gui:427
+#, python-brace-format
+msgid "Converting to {format} → {folder}\n"
+msgstr "Konvertierung nach {format} → {folder}\n"
+
+#: nautilus-extension/convert-images-gui:444
+#, python-brace-format
+msgid "[OK] {input} → {output}\n"
+msgstr "[OK] {input} → {output}\n"
+
+#: nautilus-extension/convert-images-gui:450
+#, python-brace-format
+msgid "[ERROR] {input}: {message}\n"
+msgstr "[FEHLER] {input}: {message}\n"
+
+#: nautilus-extension/convert-images-gui:459
+#, python-brace-format
+msgid ""
+"\n"
+"Finished — succeeded: {ok}, errors: {errors}.\n"
+msgstr ""
+"\n"
+"Fertig — erfolgreich: {ok}, Fehler: {errors}.\n"
+
+#: nautilus-extension/convert-images-gui:462
+#, python-brace-format
+msgid "Conversion finished — succeeded: {ok}, errors: {errors}."
+msgstr "Konvertierung abgeschlossen — erfolgreich: {ok}, Fehler: {errors}."
+
+#: nautilus-extension/convert-images-gui:468
+#, python-brace-format
+msgid "[FATAL ERROR] {message}\n"
+msgstr "[SCHWERER FEHLER] {message}\n"
+
+#: nautilus-extension/convert-images-gui:482
+msgid ""
+"\n"
+"Conversion cancelled by the user.\n"
+msgstr ""
+"\n"
+"Konvertierung vom Benutzer abgebrochen.\n"
+
+#: nautilus-extension/convert-images-gui:511
+msgid "Conversion in progress"
+msgstr "Konvertierung läuft"
+
+#: nautilus-extension/convert-images-gui:514
+msgid ""
+"Quitting now will interrupt the conversion in progress. Files already "
+"converted stay on disk; the remaining ones will not be processed."
+msgstr ""
+"Beenden unterbricht die laufende Konvertierung. Bereits konvertierte Dateien "
+"bleiben auf dem Datenträger erhalten; die übrigen werden nicht verarbeitet."
+
+#: nautilus-extension/convert-images-gui:519
+msgid "Quit anyway"
+msgstr "Trotzdem beenden"
+
+#: nautilus-extension/convert-images-gui:550
+#, python-brace-format
+msgid "[ERROR] could not start the engine: {error}\n"
+msgstr ""
+"[FEHLER] Das Konvertierungsmodul konnte nicht gestartet werden: {error}\n"
+
+#: nautilus-extension/convert-images-gui:599
+msgid "nautilus-convert-images graphical interface"
+msgstr "Grafische Oberfläche von nautilus-convert-images"
+
+#: nautilus-extension/convert-images-gui:600
+msgid "File containing one path per line"
+msgstr "Datei mit einem Pfad pro Zeile"
+
+#: nautilus-extension/convert-images-gui:601
+msgid "Files or folders to process"
+msgstr "Zu verarbeitende Dateien oder Ordner"
+
+#: nautilus-extension/convert-images-gui:609
+msgid "No file or folder provided."
+msgstr "Keine Datei und kein Ordner angegeben."
+
+#: nautilus-extension/convert_images_nautilus.py:87
+msgid "Convert images…"
+msgstr "Bilder konvertieren …"
+
+#: nautilus-extension/convert_images_nautilus.py:88
+msgid "Detect and convert images (RAW, JPEG, PNG, TIFF, BMP, WebP)"
+msgstr "Bilder erkennen und konvertieren (RAW, JPEG, PNG, TIFF, BMP, WebP)"

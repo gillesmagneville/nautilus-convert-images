@@ -283,6 +283,12 @@ inspect_packages() {
     if [ -n "$g" ] && { ! grep -q 'format_dropdown.set_selected(0)' "$g" || ! grep -q 'close-request' "$g"; }; then
       PROBLEMS+=("$DEB : IHM obsolete (JPEG par defaut ou Quitter absents)")
     fi
+    for po in po/*.po; do
+      [ -e "$po" ] || continue
+      lang="$(basename "$po" .po)"
+      [ -f "$d/usr/share/locale/$lang/LC_MESSAGES/nautilus-convert-images.mo" ] \
+        || PROBLEMS+=("$DEB : traduction '$lang' manquante (.mo absent)")
+    done
     eng="$(find "$d" -type f -name convert-images-engine -print -quit)"
     if [ -n "$eng" ]; then
       out="$("$eng" --version 2>/dev/null || true)"
@@ -300,6 +306,12 @@ inspect_packages() {
       && PROBLEMS+=("$RPM : dépendances au nom Debian (invalides sur Fedora/RHEL)")
     rpm -qp --qf '%{PACKAGER}\n' "$RPM" 2>/dev/null | grep -q 'example.com' \
       && PROBLEMS+=("$RPM : maintainer factice")
+    for po in po/*.po; do
+      [ -e "$po" ] || continue
+      lang="$(basename "$po" .po)"
+      rpm -qpl "$RPM" 2>/dev/null | grep -qx "/usr/share/locale/$lang/LC_MESSAGES/nautilus-convert-images.mo" \
+        || PROBLEMS+=("$RPM : traduction '$lang' manquante (.mo absent)")
+    done
   else
     warn "'rpm' n'est pas installe : contenu du .rpm non inspecte."
   fi
@@ -310,8 +322,8 @@ inspect_packages() {
 stale_sources() {
   local pkg="$1"
   [ -f "$pkg" ] || return 0
-  find src nautilus-extension packaging Cargo.toml Cargo.lock build-deb.sh build-rpm.sh \
-       README.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE \
+  find src nautilus-extension packaging po Cargo.toml Cargo.lock build-deb.sh build-rpm.sh \
+       README.md README.en.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE \
        -type f -newer "$pkg" -print -quit 2>/dev/null
 }
 
@@ -391,7 +403,7 @@ Fedora / RHEL et dérivés (\`nautilus-python\` est requis ; sur RHEL/Rocky/Alma
 sudo dnf install ./${RPM}
 \`\`\`
 
-Nautilus est redémarré automatiquement à l'installation pour activer l'entrée « Convertir les images… » du menu contextuel.
+Nautilus est redémarré automatiquement à l'installation pour activer l'entrée « Convertir les images… » du menu contextuel (« Convert images… » en anglais ; l'interface existe aussi en espagnol et en allemand).
 
 Vérification des téléchargements (le paquet et son fichier \`.sha256\` dans le même dossier) :
 

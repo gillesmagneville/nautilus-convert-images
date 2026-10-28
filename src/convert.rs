@@ -57,13 +57,13 @@ fn load_source(path: &Path, detected: &DetectedFormat, target: TargetFormat) -> 
                 let d = crate::raw::decode_16bit(path)?;
                 let buf: ImageBuffer<Rgb<u16>, Vec<u16>> =
                     ImageBuffer::from_raw(d.width, d.height, d.rgb)
-                        .ok_or_else(|| "taille de tampon RAW 16 bits incohérente".to_string())?;
+                        .ok_or_else(|| "inconsistent 16-bit RAW buffer size".to_string())?;
                 Ok(DynamicImage::ImageRgb16(buf))
             } else {
                 let d = crate::raw::decode_8bit(path)?;
                 let buf: ImageBuffer<Rgb<u8>, Vec<u8>> =
                     ImageBuffer::from_raw(d.width, d.height, d.rgb)
-                        .ok_or_else(|| "taille de tampon RAW 8 bits incohérente".to_string())?;
+                        .ok_or_else(|| "inconsistent 8-bit RAW buffer size".to_string())?;
                 Ok(DynamicImage::ImageRgb8(buf))
             }
         }
@@ -71,13 +71,13 @@ fn load_source(path: &Path, detected: &DetectedFormat, target: TargetFormat) -> 
             // On laisse `image` deviner/décoder ; ça couvre aussi le cas où
             // la détection par contenu avait échoué mais où le fichier est
             // en fait un format standard lisible.
-            image::open(path).map_err(|e| format!("décodage impossible : {e}"))
+            image::open(path).map_err(|e| format!("decoding failed: {e}"))
         }
     }
 }
 
 fn encode_target(img: &DynamicImage, output: &Path, opts: &ConvertOptions) -> Result<(), String> {
-    let file = File::create(output).map_err(|e| format!("création du fichier de sortie impossible : {e}"))?;
+    let file = File::create(output).map_err(|e| format!("could not create the output file: {e}"))?;
     let mut w = BufWriter::new(file);
 
     match opts.target {
@@ -88,7 +88,7 @@ fn encode_target(img: &DynamicImage, output: &Path, opts: &ConvertOptions) -> Re
             // soit le réglage de qualité).
             let rgb = img.to_rgb8();
             rgb.write_to(&mut w, ImageOutputFormat::Jpeg(opts.jpeg_quality))
-                .map_err(|e| format!("encodage JPEG impossible : {e}"))
+                .map_err(|e| format!("JPEG encoding failed: {e}"))
         }
         TargetFormat::Bmp => {
             if img.color().has_alpha() {
@@ -97,7 +97,7 @@ fn encode_target(img: &DynamicImage, output: &Path, opts: &ConvertOptions) -> Re
             } else {
                 img.to_rgb8().write_to(&mut w, ImageOutputFormat::Bmp)
             }
-            .map_err(|e| format!("encodage BMP impossible : {e}"))
+            .map_err(|e| format!("BMP encoding failed: {e}"))
         }
         TargetFormat::Webp => {
             // `image` encode en WebP sans perte (VP8L) par défaut via ce
@@ -108,20 +108,20 @@ fn encode_target(img: &DynamicImage, output: &Path, opts: &ConvertOptions) -> Re
             } else {
                 img.to_rgb8().write_to(&mut w, ImageOutputFormat::WebP)
             }
-            .map_err(|e| format!("encodage WebP impossible : {e}"))
+            .map_err(|e| format!("WebP encoding failed: {e}"))
         }
         TargetFormat::Png => {
             // PNG est intrinsèquement sans perte quel que soit le niveau de
             // compression ; on conserve la profondeur (8/16 bits) et l'alpha
             // d'origine tels que fournis par `img`.
             img.write_to(&mut w, ImageOutputFormat::Png)
-                .map_err(|e| format!("encodage PNG impossible : {e}"))
+                .map_err(|e| format!("PNG encoding failed: {e}"))
         }
         TargetFormat::Tiff => {
             // TIFF non compressé : sans perte, rapide, profondeur/alpha
             // d'origine conservés.
             img.write_to(&mut w, ImageOutputFormat::Tiff)
-                .map_err(|e| format!("encodage TIFF impossible : {e}"))
+                .map_err(|e| format!("TIFF encoding failed: {e}"))
         }
     }
 }
@@ -151,7 +151,7 @@ pub fn convert_one(
         match collision {
             crate::cli::CollisionPolicy::Overwrite => {}
             crate::cli::CollisionPolicy::Skip => {
-                return Err("ignoré (le fichier de destination existe déjà)".to_string());
+                return Err("skipped (the destination file already exists)".to_string());
             }
             crate::cli::CollisionPolicy::Rename => {
                 let mut n = 1u32;

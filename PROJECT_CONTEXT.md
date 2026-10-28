@@ -139,7 +139,9 @@ aussi s'y compiler, mais cela n'a pas été vérifié.
 Utiliser nautilus-convert-images doit rester simple :
 
 1. Sélectionner des fichiers et/ou dossiers dans Nautilus.
-2. Clic droit → **Convertir les images…**
+2. Clic droit → **Convertir les images…** (« Convert images… » en anglais,
+   « Convertir imágenes… » en espagnol, « Bilder konvertieren … » en allemand :
+   la langue suit celle de la session)
 3. Choisir le format de destination et le dossier de sortie.
 4. Convertir.
 
@@ -202,7 +204,8 @@ Des versions futures pourraient inclure :
 * prise en charge de HEIF/AVIF en sortie
 * renommage par motif lors de la conversion par lot
 * profil de couleur explicite en sortie (au-delà du sRGB par défaut)
-* traduction de l'interface au-delà du français
+* langues d'interface supplémentaires (l'interface existe déjà en anglais,
+  français, espagnol et allemand : voir `CONTRIBUTING.md`)
 
 Aucun de ces points n'est requis pour que l'outil soit utile. La v1 reste
 volontairement ciblée : détection, conversion sans perte, intégration

@@ -2,3 +2,5 @@
 *.deb
 *.rpm
 __pycache__/
+/po/*.mo
+/locale/

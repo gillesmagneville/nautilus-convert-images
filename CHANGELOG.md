@@ -14,6 +14,47 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
 
 ## [Non publié]
 
+## 2026-10-28 — v1.3.0
+
+### Ajouté
+
+- **Interface multilingue : anglais, français, espagnol et allemand.** La
+  langue est choisie automatiquement d'après la session (`LANGUAGE`,
+  `LC_ALL`, `LC_MESSAGES`, `LANG`) et l'anglais sert de langue de repli
+  pour toute autre langue. Sont traduits : l'entrée du menu contextuel de
+  Nautilus, la fenêtre (libellés, formats, collisions, journal, boîtes de
+  dialogue), les messages d'erreur du moteur et le fichier `.desktop`.
+  Technique : gettext, domaine `nautilus-convert-images`, catalogues
+  `po/*.po` compilés en `.mo` à l'empaquetage et installés dans
+  `/usr/share/locale`. Aucune dépendance d'exécution ajoutée.
+- `po/update-po.sh` (régénère le modèle `.pot` et met à jour les
+  catalogues) et une section « Traduire l'interface » dans
+  `CONTRIBUTING.md` pour corriger une traduction ou ajouter une langue.
+- Tests Python (`tests/`) : catalogues complets, champs `{…}` identiques à
+  la source, contrat des messages moteur ↔ IHM, entrée de menu Nautilus,
+  et vraie IHM lancée sous Xvfb dans chaque langue avec le vrai moteur.
+- `README.en.md` : section « Languages » ; la mention « interface en
+  français uniquement » est supprimée.
+
+### Modifié
+
+- **Les messages du moteur sont désormais en anglais** : champs `message`
+  du flux JSON (`file_done` en erreur, `fatal_error`), aide et erreurs de
+  `convert-images-engine`. L'IHM les traduit ; un message inconnu s'affiche
+  tel quel en anglais. Impact : un script qui lisait ces messages en
+  français doit être adapté (le schéma JSON ne change pas).
+- `build-deb.sh` et `build-rpm.sh` exigent `msgfmt` (paquet `gettext`) et
+  s'arrêtent, `Cargo.toml` restauré, si un catalogue est invalide.
+  `release.sh` vérifie que chaque paquet contient une traduction par
+  langue de `po/`.
+
+### Notes
+
+- Les traductions espagnole et allemande ont été rédigées avec l'aide de
+  Claude et n'ont pas été relues par des locuteurs natifs.
+- Le texte d'erreur renvoyé par `rawloader` ou LibRaw reste en anglais
+  (bibliothèques tierces).
+
 ## 2026-10-27 — v1.2.0
 
 ### Ajouté

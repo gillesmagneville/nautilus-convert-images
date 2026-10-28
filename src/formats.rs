@@ -47,7 +47,7 @@ impl DetectedFormat {
         match self {
             DetectedFormat::Standard(f) => f.label().to_string(),
             DetectedFormat::Raw(label) => label.clone(),
-            DetectedFormat::Unknown => "inconnu".to_string(),
+            DetectedFormat::Unknown => "Unknown".to_string(),
         }
     }
 
@@ -85,7 +85,7 @@ fn raw_extension_label(ext: &str) -> Option<&'static str> {
         "kdc" => "RAW Kodak (KDC)",
         "k25" => "RAW Kodak (K25)",
         "iiq" => "RAW Phase One (IIQ)",
-        "raw" => "RAW générique",
+        "raw" => "Generic RAW",
         "rwl" => "RAW Leica (RWL)",
         "gpr" => "RAW GoPro (GPR)",
         _ => return None,

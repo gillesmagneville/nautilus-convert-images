@@ -13,6 +13,8 @@ Installation : ce fichier doit se trouver sous
 /usr/local/..., pour rester visible depuis le bac à sable de Nautilus).
 """
 
+import gettext
+import os
 import subprocess
 import tempfile
 
@@ -32,8 +34,13 @@ gi.require_version("GObject", "2.0")
 from gi.repository import GObject, Nautilus  # noqa: E402
 
 GUI_BINARY = "/usr/bin/convert-images-gui"
-MENU_LABEL = "Convertir les images…"
-MENU_TIP = "Détecter et convertir les images (RAW, JPEG, PNG, TIFF, BMP, WebP)"
+
+# Internationalisation (gettext) : textes sources en anglais, langue choisie
+# d'après l'environnement de Nautilus (LANGUAGE, LC_ALL, LC_MESSAGES, LANG),
+# anglais si aucune traduction n'existe. Même domaine que l'interface.
+I18N_DOMAIN = "nautilus-convert-images"
+LOCALE_DIR = os.environ.get("CONVERT_IMAGES_LOCALEDIR", "/usr/share/locale")
+_ = gettext.translation(I18N_DOMAIN, localedir=LOCALE_DIR, fallback=True).gettext
 
 
 def _write_path_list(paths):
@@ -77,8 +84,8 @@ class ConvertImagesMenuProvider(GObject.GObject, Nautilus.MenuProvider):
     def _make_item(self, paths):
         item = Nautilus.MenuItem(
             name="ConvertImages::Convert",
-            label=MENU_LABEL,
-            tip=MENU_TIP,
+            label=_("Convert images…"),
+            tip=_("Detect and convert images (RAW, JPEG, PNG, TIFF, BMP, WebP)"),
         )
         item.connect("activate", lambda _item: _launch_gui(paths))
         return item

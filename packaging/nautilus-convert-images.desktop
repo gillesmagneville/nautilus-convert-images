@@ -1,8 +1,17 @@
 [Desktop Entry]
 Type=Application
-Name=Convertir les images
-GenericName=Convertisseur d'images pour Nautilus
-Comment=Conversion d'images RAW/JPEG/PNG/TIFF/BMP/WebP sans perte
+Name=Convert images
+Name[fr]=Convertir les images
+Name[es]=Convertir imágenes
+Name[de]=Bilder konvertieren
+GenericName=Image converter for Nautilus
+GenericName[fr]=Convertisseur d'images pour Nautilus
+GenericName[es]=Conversor de imágenes para Nautilus
+GenericName[de]=Bildkonverter für Nautilus
+Comment=Convert RAW, JPEG, PNG, TIFF, BMP and WebP images
+Comment[fr]=Conversion d'images RAW, JPEG, PNG, TIFF, BMP et WebP
+Comment[es]=Conversión de imágenes RAW, JPEG, PNG, TIFF, BMP y WebP
+Comment[de]=Konvertierung von RAW-, JPEG-, PNG-, TIFF-, BMP- und WebP-Bildern
 Exec=convert-images-gui %U
 Terminal=false
 Categories=Graphics;Photography;Utility;

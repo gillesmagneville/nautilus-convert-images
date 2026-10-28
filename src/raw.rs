@@ -36,8 +36,8 @@ fn new_pipeline(path: &Path) -> Result<imagepipe::Pipeline, String> {
         // On refait donc l'appel à rawloader pour remonter son erreur réelle
         // (boîtier non pris en charge, compression non gérée, etc.).
         match rawloader::decode_file(path) {
-            Err(raw_err) => format!("ouverture RAW impossible : {raw_err}"),
-            Ok(_) => format!("ouverture RAW impossible : {e}"),
+            Err(raw_err) => format!("cannot open RAW file: {raw_err}"),
+            Ok(_) => format!("cannot open RAW file: {e}"),
         }
     })?;
     // Résolution pleine, aucune limite -> aucun redimensionnement.
@@ -55,7 +55,7 @@ fn new_pipeline(path: &Path) -> Result<imagepipe::Pipeline, String> {
 fn guarded<T>(name: &str, f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
     match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
         Ok(r) => r,
-        Err(_) => Err(format!("{name} : erreur interne du décodeur (fichier corrompu ?)")),
+        Err(_) => Err(format!("{name}: internal decoder error (corrupted file?)")),
     }
 }
 
@@ -64,7 +64,7 @@ fn combined(primary: String, fallback: String) -> String {
     // Les messages de rawloader contiennent des retours à la ligne : on les
     // aplatit pour que l'erreur reste lisible sur une ligne du journal.
     let flat = |s: String| s.split_whitespace().collect::<Vec<_>>().join(" ");
-    format!("{} ; repli LibRaw : {}", flat(primary), flat(fallback))
+    format!("{} ; LibRaw fallback: {}", flat(primary), flat(fallback))
 }
 
 /// Essaie `primary` ; s'il échoue, essaie `fallback` ; si les deux
@@ -102,7 +102,7 @@ fn decode_8bit_rawloader(path: &Path) -> Result<DecodedRaw8, String> {
     let mut pipeline = new_pipeline(path)?;
     let img = pipeline
         .output_8bit(None)
-        .map_err(|e| format!("décodage RAW impossible : {e}"))?;
+        .map_err(|e| format!("RAW decoding failed: {e}"))?;
     Ok(DecodedRaw8 {
         width: img.width as u32,
         height: img.height as u32,
@@ -114,7 +114,7 @@ fn decode_16bit_rawloader(path: &Path) -> Result<DecodedRaw16, String> {
     let mut pipeline = new_pipeline(path)?;
     let img = pipeline
         .output_16bit(None)
-        .map_err(|e| format!("décodage RAW impossible : {e}"))?;
+        .map_err(|e| format!("RAW decoding failed: {e}"))?;
     Ok(DecodedRaw16 {
         width: img.width as u32,
         height: img.height as u32,
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn panic_becomes_an_error() {
         let r: Result<u8, String> = guarded("test", || panic!("boum"));
-        assert!(r.unwrap_err().contains("erreur interne"));
+        assert!(r.unwrap_err().contains("internal decoder error"));
     }
 
     #[test]
@@ -170,9 +170,9 @@ mod tests {
         let f = dir.join("garbage.arw");
         std::fs::write(&f, b"ceci n'est pas un fichier RAW").unwrap();
         let msg = decode_8bit(&f).unwrap_err();
-        assert!(msg.contains("repli LibRaw"), "{msg}");
+        assert!(msg.contains("LibRaw fallback"), "{msg}");
         let msg16 = decode_16bit(&f).unwrap_err();
-        assert!(msg16.contains("repli LibRaw"), "{msg16}");
+        assert!(msg16.contains("LibRaw fallback"), "{msg16}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -76,6 +76,31 @@ manuellement, hors Nautilus :
 convert-images-gui ~/Photos/img001.cr2 ~/Photos/img002.jpg
 ```
 
+## Langues
+
+L'interface — entrée du menu contextuel, fenêtre, libellés et messages
+d'erreur — existe en **anglais, français, espagnol et allemand**. La langue
+est choisie automatiquement d'après celle de votre session (variables
+`LANGUAGE`, `LC_ALL`, `LC_MESSAGES` ou `LANG`) ; pour toute autre langue,
+l'interface s'affiche en anglais. Pour essayer une langue sans changer de
+session :
+
+```bash
+LANGUAGE=de convert-images-gui ~/Photos/img001.jpg
+```
+
+Après un changement de langue de la session, redémarrez Nautilus
+(`nautilus -q`) pour que l'entrée de menu suive.
+
+* Les traductions espagnole et allemande n'ont pas encore été relues par
+  des locuteurs natifs : les corrections sont les bienvenues (voir
+  `CONTRIBUTING.md`, qui explique aussi comment ajouter une langue).
+* Les messages d'erreur que le moteur produit lui-même sont traduits ;
+  le texte que renvoient des bibliothèques tierces (par exemple le détail
+  d'une erreur de `rawloader` ou de LibRaw) reste en anglais.
+* Le moteur en ligne de commande (`convert-images-engine`, son aide et ses
+  messages) est en anglais.
+
 ## Formats
 
 | | Formats |
@@ -151,8 +176,11 @@ Rust) :
 
 ```bash
 sudo apt-get install rustc cargo libgtk-4-dev python3-gi gir1.2-gtk-4.0 \
-    python3-nautilus pkg-config build-essential
+    python3-nautilus pkg-config build-essential gettext
 ```
+
+`gettext` fournit `msgfmt`, qui compile les traductions (`po/*.po`) lors de
+l'empaquetage ; il n'est pas nécessaire pour un simple `cargo build`.
 
 `build-essential` fournit `g++`, nécessaire pour compiler LibRaw (C++)
 embarquée dans `vendor/` : la première compilation est donc plus longue
@@ -165,7 +193,7 @@ Deux scripts construisent des paquets natifs via
 `build-rpm.sh` (Fedora/RHEL/Rocky/AlmaLinux). Les deux suivent le même
 flux : choix d'un incrément de version (interactif ou par flag),
 compilation en mode release, staging du moteur + de l'IHM + de l'extension
-+ de la documentation, puis empaquetage. `VERSION` et `Cargo.toml` ne sont
++ des traductions compilées + de la documentation, puis empaquetage. `VERSION` et `Cargo.toml` ne sont
 mis à jour qu'après un build entièrement réussi — une compilation ou un
 `fpm` en échec laisse le dépôt inchangé. Une brève confirmation est
 demandée avant de construire, sauf si un flag de version a déjà été fourni
@@ -187,7 +215,7 @@ cette notion. Ni `VERSION` ni `Cargo.toml` ne contiennent jamais ce suffixe.
 
 `MAINTAINER` et `URL`, en haut de chaque script, sont déjà renseignés pour
 ce dépôt ; adaptez-les dans un fork. Les deux scripts vérifient la présence
-des outils requis (`fpm`, `cargo`, et `dpkg-deb` ou `rpmbuild`
+des outils requis (`fpm`, `cargo`, `msgfmt`, et `dpkg-deb` ou `rpmbuild`
 respectivement) et expliquent quoi installer si quelque chose manque —
 lisez ce message attentivement : sur un « aucun incrément de version n'a eu
 lieu » silencieux, la cause la plus probable est un contrôle d'outil en
@@ -221,7 +249,8 @@ aucune bibliothèque LibRaw à installer : elle est embarquée statiquement
 l'exécution : `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (noms de
 paquets Debian/Ubuntu ; `python3-gobject`, `gtk4`, `nautilus-python` sur
 Fedora) — déjà déclarés comme dépendances par les deux scripts de
-packaging.
+packaging. Les traductions n'ajoutent aucune dépendance : elles reposent
+sur le module `gettext` de la bibliothèque standard de Python.
 
 ## Quickstart
 
@@ -250,6 +279,19 @@ cas.
 
 ```bash
 cargo build --release && ./target/release/convert-images-engine formats
+```
+
+Les traductions et l'IHM ont leurs propres tests Python (`tests/`) :
+catalogues complets, champs `{…}` identiques à la source, messages du
+moteur traduits, entrée du menu Nautilus dans chaque langue, et vraie IHM
+lancée sous Xvfb avec le vrai moteur en anglais, français, espagnol et
+allemand, avec repli sur l'anglais pour une langue non gérée. Les tests qui
+ont besoin d'un outil absent (`msgfmt`, `xgettext`, PyGObject/GTK4,
+`xvfb-run`, ImageMagick, moteur compilé) sont ignorés, pas en échec.
+
+```bash
+cargo build --release
+python3 -m unittest discover -s tests -v
 ```
 
 ## Toolchain note
@@ -309,6 +351,15 @@ nautilus-convert-images/
 ├── nautilus-extension/
 │   ├── convert_images_nautilus.py    # extension nautilus-python
 │   └── convert-images-gui             # IHM GTK4 autonome
+│
+├── po/                            # traductions (gettext)
+│   ├── nautilus-convert-images.pot   # modèle : textes source, en anglais
+│   ├── fr.po  es.po  de.po           # une traduction par langue
+│   └── update-po.sh                   # régénère le .pot, met à jour les .po
+│
+├── tests/
+│   ├── test_i18n.py                 # catalogues, messages du moteur, IHM par langue
+│   └── gui_smoke.py                  # lance la vraie IHM (sous Xvfb) et rapporte
 │
 └── packaging/
     ├── nautilus-convert-images.desktop

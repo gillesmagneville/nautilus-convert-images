@@ -8,7 +8,7 @@ use crate::formats;
 #[command(
     name = "convert-images-engine",
     version,
-    about = "Moteur de conversion d'images (RAW, JPEG, PNG, TIFF, BMP, WebP) pour l'extension Nautilus nautilus-convert-images"
+    about = "Image conversion engine (RAW, JPEG, PNG, TIFF, BMP, WebP) for the nautilus-convert-images Nautilus extension"
 )]
 pub struct Cli {
     #[command(subcommand)]
@@ -17,42 +17,42 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Command {
-    /// Détecte le format des fichiers image trouvés dans les chemins donnés.
-    /// Émet une ligne JSON par fichier sur stdout, plus un résumé final.
+    /// Detects the format of the image files found in the given paths.
+    /// Emits one JSON line per file on stdout, plus a final summary.
     Detect {
-        /// Fichiers et/ou dossiers à analyser.
+        /// Files and/or folders to analyze.
         paths: Vec<PathBuf>,
-        /// Parcourir les sous-dossiers.
+        /// Search subfolders.
         #[arg(short, long)]
         recursive: bool,
     },
 
-    /// Convertit les fichiers image trouvés vers le format cible.
-    /// Émet une ligne JSON de progression par fichier sur stdout.
+    /// Converts the image files found to the target format.
+    /// Emits one JSON progress line per file on stdout.
     Convert {
-        /// Fichiers et/ou dossiers à convertir.
+        /// Files and/or folders to convert.
         paths: Vec<PathBuf>,
-        /// Parcourir les sous-dossiers.
+        /// Search subfolders.
         #[arg(short, long)]
         recursive: bool,
-        /// Dossier de destination (créé si nécessaire).
+        /// Destination folder (created if needed).
         #[arg(short, long)]
         output_dir: PathBuf,
-        /// Format cible.
+        /// Target format.
         #[arg(short, long, value_enum)]
         format: TargetFormat,
-        /// Qualité JPEG (1-100), ignorée pour les autres formats.
+        /// JPEG quality (1-100), ignored for other formats.
         #[arg(long, default_value_t = 100)]
         quality: u8,
-        /// Politique en cas de fichier de destination déjà existant.
+        /// What to do when the destination file already exists.
         #[arg(long, value_enum, default_value = "rename")]
         on_collision: CollisionPolicy,
-        /// Nombre de threads (par défaut : tous les cœurs disponibles).
+        /// Number of threads (default: all available cores).
         #[arg(long)]
         threads: Option<usize>,
     },
 
-    /// Liste les formats source et cible supportés (pour l'IHM).
+    /// Lists the supported source and target formats (for the GUI).
     Formats,
 }
 

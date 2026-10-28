@@ -71,6 +71,15 @@ nautilus-convert-images/
 │
 ├── vendor/libraw-sys/             # LibRaw 0.21.3 + liaisons (voir vendor/README.md)
 │
+├── po/                            # traductions gettext (voir « Internationalisation »)
+│   ├── nautilus-convert-images.pot   # modèle : textes source en anglais
+│   ├── fr.po  es.po  de.po           # une traduction par langue
+│   └── update-po.sh                   # régénère le .pot et met à jour les .po
+│
+├── tests/
+│   ├── test_i18n.py                 # catalogues, messages du moteur, IHM par langue
+│   └── gui_smoke.py                  # lance la vraie IHM sous Xvfb et rapporte ce qu'elle affiche
+│
 └── packaging/
     ├── nautilus-convert-images.desktop  # lancement manuel de l'IHM hors menu contextuel
     └── postinst                          # redémarre Nautilus après installation du paquet
@@ -217,6 +226,13 @@ fin du processus.
 {"event": "fatal_error", "message": "..."}
 ```
 
+Les champs `message` (événements `file_done` en erreur et `fatal_error`)
+sont des **messages techniques en anglais**, non localisés : c'est l'IHM qui
+les traduit (voir « Internationalisation »). De même, l'aide en ligne de
+commande et les messages d'erreur du moteur sont en anglais. Les libellés
+de format de l'événement `file` (`"format": "RAW Sony (ARW)"`, `"Unknown"`…)
+sont également traduits côté IHM.
+
 Ce schéma est le contrat entre le moteur et n'importe quelle IHM
 (`convert-images-gui` aujourd'hui, potentiellement autre chose demain) : il
 ne doit pas changer de forme sans mettre à jour ce document **et** le code
@@ -246,6 +262,8 @@ en sous-processus détaché (`start_new_session=True`), sans jamais attendre
 sa fin. Doit être installée sous
 `/usr/share/nautilus-python/extensions/` — jamais dans `~/.local/...` ni
 `/usr/local/...`, invisibles depuis le bac à sable bwrap de Nautilus.
+Le libellé et l'infobulle de l'entrée de menu sont traduits (même domaine
+gettext que l'IHM).
 
 ---
 
@@ -257,6 +275,71 @@ elle peut être lancée manuellement avec des chemins en argument). Pilote
 ligne par ligne (`Gio.DataInputStream.read_line_async`), jamais en
 bloquant la boucle GTK. Chaque ligne JSON reçue met à jour l'interface
 (compteurs de détection, barre de progression, journal).
+
+---
+
+# Internationalisation
+
+L'interface (entrée du menu Nautilus, fenêtre, journal) est disponible en
+anglais, français, espagnol et allemand, avec [gettext](https://www.gnu.org/software/gettext/).
+
+* **Textes source en anglais.** Le code contient les messages en anglais
+  (`_("Convert images")`) ; l'anglais est donc aussi la langue de repli
+  quand aucune traduction ne correspond. Un seul domaine,
+  `nautilus-convert-images`, est partagé par l'IHM et l'extension.
+* **Choix de la langue.** Automatique, par le module `gettext` de la
+  bibliothèque standard de Python : `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`,
+  puis `LANG`, avec repli de `fr_CA` sur `fr`, puis sur l'anglais
+  (`fallback=True`). Aucun `setlocale` ni dépendance supplémentaire.
+* **Catalogues.** `po/<langue>.po` (sources éditables) sont compilés en
+  `.mo` par `build-deb.sh` / `build-rpm.sh` (`msgfmt --check`, qui refuse
+  un champ `{…}` modifié) et installés dans
+  `/usr/share/locale/<langue>/LC_MESSAGES/nautilus-convert-images.mo`. Les
+  `.mo` ne sont pas versionnés. `release.sh` vérifie que chaque paquet
+  contient un `.mo` par langue de `po/`.
+* **Pluriels.** `ngettext` pour les comptes (« 1 fichier détecté » / « 2
+  fichiers détectés ») ; les règles de pluriel de chaque langue sont dans
+  l'en-tête de son `.po`.
+* **Champs nommés.** Les messages à variables utilisent `{nom}` avec
+  `str.format`, jamais `%s`, pour que le traducteur puisse réordonner les
+  mots. Les commentaires `# TRANSLATORS:` du code sont repris dans le `.pot`.
+* **Fichier `.desktop`.** Traduit directement avec des clés `Name[xx]`,
+  `GenericName[xx]`, `Comment[xx]` (hors gettext).
+* **Variables d'environnement de développement.**
+  `CONVERT_IMAGES_LOCALEDIR` (dossier de catalogues autre que
+  `/usr/share/locale`) et `CONVERT_IMAGES_ENGINE` (autre binaire du moteur)
+  servent aux tests ; elles n'ont aucun usage en exploitation normale.
+
+## Messages du moteur
+
+Le moteur ne connaît pas gettext : il émet des messages d'erreur techniques
+**en anglais** dans le flux JSON. L'IHM les rend dans la langue de
+l'utilisateur au moyen de `ENGINE_MESSAGE_TEMPLATES` : chaque modèle est un
+message anglais avec des champs `{nom}` (par exemple
+`"cannot open RAW file: {detail}"`), transformé en expression régulière et
+traduit comme n'importe quel autre texte.
+
+* Les parties variables sont conservées telles quelles (nom de fichier,
+  texte d'une bibliothèque tierce) et traduites récursivement si elles
+  correspondent à leur tour à un modèle — c'est ainsi que l'erreur
+  combinée « `cannot open RAW file: …` ; `LibRaw fallback: …` » est rendue
+  en entier.
+* Un message **inconnu** est affiché tel quel, en anglais : modifier un
+  message du moteur ne casse donc jamais l'IHM, il cesse seulement d'être
+  traduit.
+* **Quand on modifie un message dans `src/*.rs`**, il faut mettre à jour
+  le modèle correspondant dans l'IHM, puis lancer `po/update-po.sh` et
+  traduire la nouvelle entrée. `tests/test_i18n.py` vérifie que chaque
+  modèle existe encore dans le code Rust et que le `.pot` est à jour.
+* Le texte renvoyé par `rawloader` ou LibRaw (« Couldn't find a decoder for
+  this file… ») n'est pas traduit : il vient d'une bibliothèque tierce.
+
+## Ajouter ou mettre à jour une langue
+
+Voir `CONTRIBUTING.md`. En résumé : `po/update-po.sh` régénère le `.pot` et
+fusionne les nouveautés dans chaque `.po` (les entrées nouvelles ou
+modifiées sont marquées « fuzzy » ou vides) ; on traduit, on relance
+`po/update-po.sh` (qui vérifie le catalogue), puis `tests/test_i18n.py`.
 
 ---
 

@@ -45,9 +45,9 @@ fn main() {
                 output: vec![
                     OutputFormatInfo { id: "jpeg", label: "JPEG", lossless: convert::TargetFormat::Jpeg.is_lossless() },
                     OutputFormatInfo { id: "png", label: "PNG", lossless: convert::TargetFormat::Png.is_lossless() },
-                    OutputFormatInfo { id: "tiff", label: "TIFF (non compressé)", lossless: convert::TargetFormat::Tiff.is_lossless() },
+                    OutputFormatInfo { id: "tiff", label: "TIFF (uncompressed)", lossless: convert::TargetFormat::Tiff.is_lossless() },
                     OutputFormatInfo { id: "bmp", label: "BMP", lossless: convert::TargetFormat::Bmp.is_lossless() },
-                    OutputFormatInfo { id: "webp", label: "WebP (sans perte)", lossless: convert::TargetFormat::Webp.is_lossless() },
+                    OutputFormatInfo { id: "webp", label: "WebP (lossless)", lossless: convert::TargetFormat::Webp.is_lossless() },
                 ],
             };
             print_json(serde_json::to_value(info).unwrap());
@@ -93,7 +93,7 @@ fn main() {
             if let Err(e) = std::fs::create_dir_all(&output_dir) {
                 print_json(json!({
                     "event": "fatal_error",
-                    "message": format!("impossible de créer le dossier de destination : {e}"),
+                    "message": format!("could not create the output folder: {e}"),
                 }));
                 std::process::exit(1);
             }

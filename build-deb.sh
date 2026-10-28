@@ -13,7 +13,8 @@ set -euo pipefail
 #
 # Difference avec linuxdoctor : deux binaires a stager (le moteur Rust
 # et l'IHM GTK4 en Python, cette derniere copiee telle quelle, sans
-# compilation), plus l'extension nautilus-python et le fichier .desktop.
+# compilation), plus l'extension nautilus-python et le fichier .desktop,
+# plus les traductions (po/*.po compiles en .mo avec msgfmt).
 # ============================================================
 
 PACKAGE_NAME="nautilus-convert-images"
@@ -78,6 +79,14 @@ if ! command -v fpm &> /dev/null; then
 fi
 if ! command -v cargo &> /dev/null; then
   echo "Erreur : cargo (Rust) n'est pas installe. Voir https://rustup.rs"
+  exit 1
+fi
+if ! command -v msgfmt &> /dev/null; then
+  echo "Erreur : msgfmt (outils GNU gettext) est introuvable : il compile les"
+  echo "traductions (po/*.po) incluses dans le paquet."
+  echo "Sur Debian/Ubuntu :               sudo apt install gettext"
+  echo "Sur Fedora/RHEL/Rocky/AlmaLinux : sudo dnf install gettext"
+  echo "Sur openSUSE :                    sudo zypper install gettext-tools"
   exit 1
 fi
 if ! command -v dpkg-deb &> /dev/null; then
@@ -207,7 +216,36 @@ cp "$PROJECT_DIR/nautilus-extension/convert_images_nautilus.py" \
   "$BUILD_DIR/usr/share/nautilus-python/extensions/convert_images_nautilus.py"
 cp "$PROJECT_DIR/packaging/nautilus-convert-images.desktop" \
   "$BUILD_DIR/usr/share/applications/nautilus-convert-images.desktop"
-for doc in README.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE; do
+
+# Traductions : chaque po/<langue>.po est compile en .mo (format binaire
+# lu par gettext) et installe dans /usr/share/locale/<langue>/LC_MESSAGES/.
+# Le nom du fichier .mo doit etre identique au domaine gettext declare dans
+# l'IHM et l'extension (I18N_DOMAIN = "nautilus-convert-images").
+# --check refuse un catalogue dont les champs {…} ne correspondent pas.
+echo ">>> Compilation des traductions (msgfmt)..."
+I18N_DOMAIN="nautilus-convert-images"
+I18N_COUNT=0
+for po in "$PROJECT_DIR"/po/*.po; do
+  [ -e "$po" ] || continue
+  lang="$(basename "$po" .po)"
+  mkdir -p "$BUILD_DIR/usr/share/locale/$lang/LC_MESSAGES"
+  if ! msgfmt --check -o "$BUILD_DIR/usr/share/locale/$lang/LC_MESSAGES/$I18N_DOMAIN.mo" "$po"; then
+    echo "Erreur : compilation de $po impossible."
+    sed -i "s/^version = \".*\"/version = \"$CURRENT_VERSION\"/" "$CARGO_TOML"
+    rm -rf "$BUILD_DIR"
+    echo "Construction annulee : Cargo.toml restaure, aucun paquet genere."
+    exit 1
+  fi
+  I18N_COUNT=$((I18N_COUNT + 1))
+done
+if [ "$I18N_COUNT" -eq 0 ]; then
+  echo "Erreur : aucun catalogue po/*.po trouve : le paquet n'aurait aucune traduction."
+  sed -i "s/^version = \".*\"/version = \"$CURRENT_VERSION\"/" "$CARGO_TOML"
+  rm -rf "$BUILD_DIR"
+  exit 1
+fi
+echo "    $I18N_COUNT langue(s) installee(s)."
+for doc in README.md README.en.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE; do
   [ -f "$PROJECT_DIR/$doc" ] && cp "$PROJECT_DIR/$doc" "$BUILD_DIR/usr/share/doc/$PACKAGE_NAME/"
 done
 

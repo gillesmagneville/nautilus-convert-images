@@ -49,14 +49,14 @@ fn libraw_error(code: c_int) -> String {
 /// Renvoie (largeur, hauteur, octets bruts en ordre natif).
 fn develop(path: &Path, bits: u16) -> Result<(u32, u32, Vec<u8>), String> {
     let c_path = CString::new(path.as_os_str().as_bytes())
-        .map_err(|_| "chemin invalide (octet nul)".to_string())?;
+        .map_err(|_| "invalid path (null byte)".to_string())?;
 
     // SAFETY: appels FFI sur une instance LibRaw privée à ce thread ; tous
     // les pointeurs sont vérifiés avant usage et libérés par les gardes.
     unsafe {
         let raw = ffi::libraw_init(0);
         if raw.is_null() {
-            return Err("LibRaw : initialisation impossible".to_string());
+            return Err("LibRaw: initialization failed".to_string());
         }
         let handle = Handle(raw);
 
@@ -73,21 +73,21 @@ fn develop(path: &Path, bits: u16) -> Result<(u32, u32, Vec<u8>), String> {
 
         let rc = ffi::libraw_open_file(handle.0, c_path.as_ptr());
         if rc != 0 {
-            return Err(format!("LibRaw : {}", libraw_error(rc)));
+            return Err(format!("LibRaw: {}", libraw_error(rc)));
         }
         let rc = ffi::libraw_unpack(handle.0);
         if rc != 0 {
-            return Err(format!("LibRaw : {}", libraw_error(rc)));
+            return Err(format!("LibRaw: {}", libraw_error(rc)));
         }
         let rc = ffi::libraw_dcraw_process(handle.0);
         if rc != 0 {
-            return Err(format!("LibRaw : {}", libraw_error(rc)));
+            return Err(format!("LibRaw: {}", libraw_error(rc)));
         }
 
         let mut errc: c_int = 0;
         let img = ffi::libraw_dcraw_make_mem_image(handle.0, &mut errc);
         if img.is_null() {
-            return Err(format!("LibRaw : {}", libraw_error(errc)));
+            return Err(format!("LibRaw: {}", libraw_error(errc)));
         }
         let img = Processed(img);
 
@@ -104,13 +104,13 @@ fn develop(path: &Path, bits: u16) -> Result<(u32, u32, Vec<u8>), String> {
         };
         if kind != ffi::LibRaw_image_formats_LIBRAW_IMAGE_BITMAP || colors != 3 || depth != bits {
             return Err(format!(
-                "LibRaw : image développée inattendue (type {kind}, {colors} canaux, {depth} bits)"
+                "LibRaw: unexpected developed image (type {kind}, {colors} channels, {depth} bits)"
             ));
         }
         let expected = w as usize * h as usize * 3 * (bits as usize / 8);
         if size != expected || w == 0 || h == 0 {
             return Err(format!(
-                "LibRaw : taille d'image incohérente ({size} octets, {expected} attendus)"
+                "LibRaw: inconsistent image size ({size} bytes, {expected} expected)"
             ));
         }
         let data = std::slice::from_raw_parts((*img.0).data.as_ptr(), size);
@@ -270,7 +270,7 @@ mod tests {
         let f = dir.join("bad.arw");
         std::fs::write(&f, b"pas un RAW").unwrap();
         let msg = decode_8bit(&f).unwrap_err();
-        assert!(msg.starts_with("LibRaw :"), "{msg}");
+        assert!(msg.starts_with("LibRaw:"), "{msg}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

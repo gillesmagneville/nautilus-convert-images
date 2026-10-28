@@ -35,7 +35,12 @@ qui n'y rentre pas.
    cargo fmt --check
    python3 -m py_compile nautilus-extension/convert-images-gui \
                           nautilus-extension/convert_images_nautilus.py
+   python3 -m unittest discover -s tests -v
    ```
+
+   Les tests Python ont besoin de `gettext` ; ceux qui lancent la vraie IHM
+   demandent en plus PyGObject/GTK4, `xvfb`, ImageMagick et le moteur
+   compilé (`cargo build --release`) ; ils sont ignorés si un outil manque.
 
 3. Décrivez dans la pull request ce qui change et pourquoi.
 
@@ -62,6 +67,60 @@ En résumé :
   discuter d'abord dans une issue — c'est un principe fondateur du projet
   (`PROJECT_CONTEXT.md`, principe n°2).
 
+## Traduire l'interface
+
+L'interface existe en anglais (langue de repli), français, espagnol et
+allemand. Les traductions espagnole et allemande n'ont pas été relues par
+des locuteurs natifs : une relecture est une contribution précieuse, même
+pour une seule phrase. Aucune connaissance en programmation n'est
+nécessaire — un fichier `po/<langue>.po` est un fichier texte avec, pour
+chaque message, `msgid` (l'anglais) et `msgstr` (la traduction).
+
+**Corriger une traduction** : modifiez le `msgstr` dans `po/<langue>.po`,
+puis lancez `python3 -m unittest discover -s tests -v`.
+
+**Ajouter une langue** (par exemple l'italien, code `it`) :
+
+```bash
+sudo apt install gettext      # msgmerge, msgfmt
+msginit --no-translator --locale=it -i po/nautilus-convert-images.pot -o po/it.po
+# traduire po/it.po avec un éditeur de texte ou Poedit, puis :
+./po/update-po.sh
+python3 -m unittest discover -s tests -v
+```
+
+Pour essayer le résultat sans installer le paquet :
+
+```bash
+mkdir -p /tmp/locale/it/LC_MESSAGES
+msgfmt -o /tmp/locale/it/LC_MESSAGES/nautilus-convert-images.mo po/it.po
+CONVERT_IMAGES_LOCALEDIR=/tmp/locale LANGUAGE=it \
+  CONVERT_IMAGES_ENGINE=./target/release/convert-images-engine \
+  python3 nautilus-extension/convert-images-gui ~/Photos
+```
+
+À respecter :
+
+- Un catalogue doit être **complet** (aucune entrée vide ni « fuzzy ») pour
+  passer les tests : un catalogue à moitié traduit afficherait une
+  interface mélangeant deux langues.
+- Gardez les champs entre accolades (`{ok}`, `{folder}`…) **exactement** tels
+  quels : on peut les déplacer dans la phrase, pas les renommer ni les
+  traduire. `msgfmt --check` (lancé par `po/update-po.sh` et par les scripts
+  de paquet) refuse un catalogue qui ne respecte pas cette règle.
+- Lisez les commentaires `#.` (« TRANSLATORS ») au-dessus de certains
+  messages : ils expliquent le contexte.
+- Une nouvelle langue est prise en compte automatiquement par
+  `build-deb.sh`, `build-rpm.sh` et `release.sh` dès que `po/<langue>.po`
+  existe ; ajoutez aussi les clés `Name[it]`, `GenericName[it]` et
+  `Comment[it]` dans `packaging/nautilus-convert-images.desktop`, et la
+  langue dans le test `GuiSmokeTests` si vous voulez la couvrir.
+- Si vous ajoutez ou modifiez un texte dans le code : écrivez-le en
+  anglais avec `_("…")`, lancez `po/update-po.sh`, et traduisez les entrées
+  nouvelles (au minimum en français, langue de l'auteur). Voir
+  « Internationalisation » dans `ARCHITECTURE.md`, notamment pour les
+  messages du moteur.
+
 ## Style de code
 
 - `cargo fmt` avant de proposer une pull request.
@@ -77,7 +136,8 @@ En résumé :
 ## Documentation
 
 Si votre changement modifie le comportement observable (nouveau format,
-nouvelle option CLI, nouveau schéma JSON), mettez à jour `CHANGELOG.md`
+nouvelle option CLI, nouveau schéma JSON, nouveau texte d'interface),
+mettez à jour `CHANGELOG.md`
 dans la même pull request, sous `[Non publié]`, et `ARCHITECTURE.md` si le
 contrat technique change.
 

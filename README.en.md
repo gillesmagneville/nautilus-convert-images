@@ -11,13 +11,13 @@ included, at full resolution, with no cropping or resizing.**
 [![License GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
 Select files or whole folders in GNOME Files, right-click →
-**Convertir les images…**, choose the format and the destination folder:
+**Convert images…**, choose the format and the destination folder:
 that's all.
 
-> **Note:** the user interface (the menu entry and the window) is
-> currently **in French only**. The other documents (`PROJECT_CONTEXT.md`
-> for the vision and principles, `ARCHITECTURE.md` for the technical
-> contract, `CHANGELOG.md`) are in French too.
+> **Note:** the user interface is available in **English, French, Spanish
+> and German** (see [Languages](#languages)). The other documents
+> (`PROJECT_CONTEXT.md` for the vision and principles, `ARCHITECTURE.md`
+> for the technical contract, `CHANGELOG.md`) are in French.
 
 ## Why use it?
 
@@ -71,12 +71,37 @@ sha256sum -c nautilus-convert-images_X.Y.Z_amd64.deb.sha256
 ## Usage
 
 Right-click on a selection (files and/or folders) or on the background of a
-folder → **Convertir les images…**. The GUI can also be launched manually,
+folder → **Convert images…**. The GUI can also be launched manually,
 outside Nautilus:
 
 ```bash
 convert-images-gui ~/Photos/img001.cr2 ~/Photos/img002.jpg
 ```
+
+## Languages
+
+The interface — the context-menu entry, the window, labels and error
+messages — is available in **English, French, Spanish and German**. The
+language is chosen automatically from your session's language (the
+`LANGUAGE`, `LC_ALL`, `LC_MESSAGES` or `LANG` variables); for any other
+language, the interface is shown in English. To try a language without
+changing your session:
+
+```bash
+LANGUAGE=de convert-images-gui ~/Photos/img001.jpg
+```
+
+After changing the session language, restart Nautilus (`nautilus -q`) so
+that the menu entry follows.
+
+* The Spanish and German translations have not yet been reviewed by native
+  speakers: corrections are welcome (see `CONTRIBUTING.md`, in French, which
+  also explains how to add a language).
+* Error messages produced by the engine itself are translated; text coming
+  back from third-party libraries (for example the detail of a `rawloader`
+  or LibRaw error) stays in English.
+* The command-line engine (`convert-images-engine`, its help and its
+  messages) is in English.
 
 ## Formats
 
@@ -151,8 +176,11 @@ engine):
 
 ```bash
 sudo apt-get install rustc cargo libgtk-4-dev python3-gi gir1.2-gtk-4.0 \
-    python3-nautilus pkg-config build-essential
+    python3-nautilus pkg-config build-essential gettext
 ```
+
+`gettext` provides `msgfmt`, which compiles the translations (`po/*.po`)
+when packaging; it is not needed for a plain `cargo build`.
 
 `build-essential` provides `g++`, needed to compile the LibRaw (C++) built
 into `vendor/`: the first build is therefore longer (a few minutes), later
@@ -164,7 +192,8 @@ Two scripts build native packages via [fpm](https://fpm.readthedocs.io/) —
 `build-deb.sh` (Debian/Ubuntu) and `build-rpm.sh`
 (Fedora/RHEL/Rocky/AlmaLinux). Both follow the same flow: choice of a
 version increment (interactive or by flag), release-mode build, staging of
-the engine + the GUI + the extension + the documentation, then packaging.
+the engine + the GUI + the extension + the compiled translations + the
+documentation, then packaging.
 `VERSION` and `Cargo.toml` are only updated after a fully successful build
 — a failed compilation or `fpm` run leaves the repository unchanged. A
 short confirmation is asked before building, unless a version flag was
@@ -186,7 +215,7 @@ Neither `VERSION` nor `Cargo.toml` ever contain this suffix.
 
 `MAINTAINER` and `URL`, at the top of each script, are already filled in for
 this repository; adapt them in a fork. Both scripts check that the required
-tools are present (`fpm`, `cargo`, and `dpkg-deb` or `rpmbuild`
+tools are present (`fpm`, `cargo`, `msgfmt`, and `dpkg-deb` or `rpmbuild`
 respectively) and explain what to install if something is missing — read
 that message carefully: on a silent "no version increment took place", the
 most likely cause is a failed tool check (for example `fpm` not actually
@@ -218,7 +247,8 @@ library to install: it is statically embedded (see "Philosophie des
 dépendances" in `ARCHITECTURE.md`, in French). The GUI and the extension need, at run time:
 `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (Debian/Ubuntu package
 names; `python3-gobject`, `gtk4`, `nautilus-python` on Fedora) — already
-declared as dependencies by both packaging scripts.
+declared as dependencies by both packaging scripts. The translations add no
+dependency: they rely on the `gettext` module of Python's standard library.
 
 ## Quickstart
 
@@ -246,6 +276,19 @@ is validated case by case.
 
 ```bash
 cargo build --release && ./target/release/convert-images-engine formats
+```
+
+The translations and the GUI have their own Python tests (`tests/`):
+complete catalogs, `{…}` placeholders identical to the source text, engine
+messages translated, the Nautilus menu entry in each language, and the real
+GUI launched under Xvfb with the real engine in English, French, Spanish
+and German, falling back to English for an unsupported language. Tests that
+need a missing tool (`msgfmt`, `xgettext`, PyGObject/GTK4, `xvfb-run`,
+ImageMagick, a built engine) are skipped, not failed.
+
+```bash
+cargo build --release
+python3 -m unittest discover -s tests -v
 ```
 
 ## Toolchain note
@@ -303,6 +346,15 @@ nautilus-convert-images/
 ├── nautilus-extension/
 │   ├── convert_images_nautilus.py    # nautilus-python extension
 │   └── convert-images-gui             # standalone GTK4 GUI
+│
+├── po/                            # translations (gettext)
+│   ├── nautilus-convert-images.pot   # template: source texts, in English
+│   ├── fr.po  es.po  de.po           # one translation per language
+│   └── update-po.sh                   # regenerates the .pot, updates the .po files
+│
+├── tests/
+│   ├── test_i18n.py                 # catalogs, engine messages, GUI per language
+│   └── gui_smoke.py                  # launches the real GUI (under Xvfb) and reports
 │
 └── packaging/
     ├── nautilus-convert-images.desktop
