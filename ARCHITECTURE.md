@@ -50,7 +50,8 @@ nautilus-convert-images/
 ├── Cargo.lock
 ├── build-deb.sh                 # empaquetage .deb (fpm)
 ├── build-rpm.sh                  # empaquetage .rpm (fpm)
-├── README.md
+├── README.md                      # version anglaise (affichée par défaut sur GitHub)
+├── README.fr.md                   # version française
 ├── PROJECT_CONTEXT.md
 ├── ARCHITECTURE.md
 ├── CONTRIBUTING.md
@@ -360,5 +361,5 @@ modifiées sont marquées « fuzzy » ou vides) ; on traduit, on relance
 
 # Note de toolchain
 
-Voir la section « Toolchain » du `README.md` pour les versions de crates
+Voir la section « Toolchain » du `README.fr.md` pour les versions de crates
 figées et pourquoi.

@@ -14,6 +14,13 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
 
 ## [Non publié]
 
+### Modifié
+
+- **Le README affiché par défaut sur GitHub est maintenant en anglais** :
+  `README.md` est la version anglaise et la version française devient
+  `README.fr.md` (`README.en.md` disparaît). Les deux sont embarqués dans les
+  paquets `.deb` et `.rpm`.
+
 ## 2026-10-28 — v1.3.0
 
 ### Ajouté

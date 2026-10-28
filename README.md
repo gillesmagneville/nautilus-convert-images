@@ -2,168 +2,168 @@
 
 # nautilus-convert-images
 
-🇬🇧 [English version](README.en.md)
+🇫🇷 [Version française](README.fr.md)
 
-**Convertissez vos photos d'un clic droit, directement depuis Nautilus —
-RAW compris, en pleine résolution, sans recadrage ni redimensionnement.**
+**Convert your photos with a right-click, straight from Nautilus — RAW
+included, at full resolution, with no cropping or resizing.**
 
-[![Dernière release](https://img.shields.io/github/v/release/gillesmagneville/nautilus-convert-images)](https://github.com/gillesmagneville/nautilus-convert-images/releases/latest)
-[![Licence GPL-3.0](https://img.shields.io/badge/licence-GPL--3.0-blue)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/gillesmagneville/nautilus-convert-images)](https://github.com/gillesmagneville/nautilus-convert-images/releases/latest)
+[![License GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
-Sélectionnez des fichiers ou des dossiers entiers dans GNOME Fichiers,
-clic droit → **Convertir les images…**, choisissez le format et le dossier
-de destination : c'est tout. Voir `PROJECT_CONTEXT.md` pour la vision et
-les principes, `ARCHITECTURE.md` pour le contrat technique.
+Select files or whole folders in GNOME Files, right-click →
+**Convert images…**, choose the format and the destination folder:
+that's all.
 
-## Pourquoi l'utiliser ?
+> **Note:** the user interface is available in **English, French, Spanish
+> and German** (see [Languages](#languages)). The other documents
+> (`PROJECT_CONTEXT.md` for the vision and principles, `ARCHITECTURE.md`
+> for the technical contract, `CHANGELOG.md`) are in French.
 
-* **Aucun détour** — pas d'application à lancer, pas de ligne de commande,
-  pas d'import : la conversion est dans le menu contextuel de vos fichiers.
-* **Tout ce que vous avez sous la main** — RAW de nombreux boîtiers (voir
-  « Compatibilité RAW »), JPEG, PNG, TIFF, BMP, GIF, WebP, y compris
-  mélangés dans un même dossier : le format de chaque fichier est détecté,
-  même quand l'extension est absente ou trompeuse.
-* **Votre qualité, intacte** — pleine résolution, jamais de recadrage ni de
-  redimensionnement ; PNG, TIFF, BMP et WebP sont réellement sans perte
-  (transparence et profondeur 16 bits conservées). Pour un RAW, cela vaut
-  pour l'image développée, pas pour le fichier d'origine : conservez-le.
-* **Rapide** — moteur en Rust, tous les cœurs du processeur travaillent en
-  parallèle sur les lots.
-* **Sous contrôle** — vous voyez ce qui a été détecté avant de lancer,
-  choisissez le dossier de destination (création possible) et ce qui se
-  passe si un nom existe déjà (ignorer, renommer, écraser), puis suivez la
-  progression en direct.
-* **Léger et libre** — décodeurs RAW intégrés au programme (rien à
-  installer en plus), licence GPL-3.0.
+## Why use it?
 
-| Vous avez | Vous voulez | Il suffit de |
+* **No detour** — no application to launch, no command line, no import:
+  the conversion is in the context menu of your files.
+* **Everything you have at hand** — RAW from many cameras (see "RAW
+  compatibility"), JPEG, PNG, TIFF, BMP, GIF, WebP, even mixed in a single
+  folder: the format of each file is detected, even when the extension is
+  missing or misleading.
+* **Your quality, intact** — full resolution, never any cropping or
+  resizing; PNG, TIFF, BMP and WebP are truly lossless (transparency and
+  16-bit depth preserved). For a RAW, this applies to the developed image,
+  not to the original file: keep it.
+* **Fast** — Rust engine, all CPU cores work in parallel on batches.
+* **In control** — you see what was detected before starting, choose the
+  destination folder (creating one is possible) and what happens if a name
+  already exists (skip, rename, overwrite), then follow the progress live.
+* **Light and free** — RAW decoders built into the program (nothing more
+  to install), GPL-3.0 license.
+
+| You have | You want | What to do |
 |---|---|---|
-| Un dossier de RAW après un shooting | Des JPEG à partager | le sélectionner, choisir JPEG (le choix par défaut) |
-| Des RAW à passer dans un autre logiciel | Une image sans perte | choisir TIFF ou PNG (16 bits), et garder le RAW |
-| Un dossier qui mélange CR2, TIFF et PNG | Un seul format partout | tout sélectionner, choisir le format |
-| Des BMP ou PNG volumineux | Des fichiers plus compacts, sans perte | choisir WebP sans perte |
+| A folder of RAW files after a shoot | JPEGs to share | select it, choose JPEG (the default) |
+| RAW files to pass to another program | A lossless image | choose TIFF or PNG (16-bit), and keep the RAW |
+| A folder mixing CR2, TIFF and PNG | A single format everywhere | select everything, choose the format |
+| Large BMP or PNG files | Smaller files, still lossless | choose lossless WebP |
 
 ## Installation
 
-Téléchargez le paquet de votre distribution depuis la page des
+Download the package for your distribution from the
 [releases](https://github.com/gillesmagneville/nautilus-convert-images/releases/latest)
-(`X.Y.Z` = numéro de version), puis :
+page (`X.Y.Z` = version number), then:
 
 ```bash
-# Debian, Ubuntu et dérivés
+# Debian, Ubuntu and derivatives
 sudo apt install ./nautilus-convert-images_X.Y.Z_amd64.deb
 
-# Fedora, RHEL et dérivés (nautilus-python vient d'EPEL sur RHEL/Rocky/Alma)
+# Fedora, RHEL and derivatives (nautilus-python comes from EPEL on RHEL/Rocky/Alma)
 sudo dnf install ./nautilus-convert-images-X.Y.Z-1.x86_64.rpm
 ```
 
-Nautilus est redémarré automatiquement pour activer l'entrée de menu.
-Chaque paquet est publié avec son propre fichier `.sha256` (il n'y a pas
-de `SHA256SUMS` global). Pour vérifier un téléchargement, placez le paquet
-et son fichier `.sha256` dans le même dossier :
+Nautilus is restarted automatically to enable the menu entry. Each package
+is published with its own `.sha256` file (there is no global `SHA256SUMS`).
+To verify a download, put the package and its `.sha256` file in the same
+folder:
 
 ```bash
 sha256sum -c nautilus-convert-images_X.Y.Z_amd64.deb.sha256
 ```
 
-## Utilisation
+## Usage
 
-Clic droit sur une sélection (fichiers et/ou dossiers) ou sur le fond d'un
-dossier → **Convertir les images…**. L'IHM peut aussi être lancée
-manuellement, hors Nautilus :
+Right-click on a selection (files and/or folders) or on the background of a
+folder → **Convert images…**. The GUI can also be launched manually,
+outside Nautilus:
 
 ```bash
 convert-images-gui ~/Photos/img001.cr2 ~/Photos/img002.jpg
 ```
 
-## Langues
+## Languages
 
-L'interface — entrée du menu contextuel, fenêtre, libellés et messages
-d'erreur — existe en **anglais, français, espagnol et allemand**. La langue
-est choisie automatiquement d'après celle de votre session (variables
-`LANGUAGE`, `LC_ALL`, `LC_MESSAGES` ou `LANG`) ; pour toute autre langue,
-l'interface s'affiche en anglais. Pour essayer une langue sans changer de
-session :
+The interface — the context-menu entry, the window, labels and error
+messages — is available in **English, French, Spanish and German**. The
+language is chosen automatically from your session's language (the
+`LANGUAGE`, `LC_ALL`, `LC_MESSAGES` or `LANG` variables); for any other
+language, the interface is shown in English. To try a language without
+changing your session:
 
 ```bash
 LANGUAGE=de convert-images-gui ~/Photos/img001.jpg
 ```
 
-Après un changement de langue de la session, redémarrez Nautilus
-(`nautilus -q`) pour que l'entrée de menu suive.
+After changing the session language, restart Nautilus (`nautilus -q`) so
+that the menu entry follows.
 
-* Les traductions espagnole et allemande n'ont pas encore été relues par
-  des locuteurs natifs : les corrections sont les bienvenues (voir
-  `CONTRIBUTING.md`, qui explique aussi comment ajouter une langue).
-* Les messages d'erreur que le moteur produit lui-même sont traduits ;
-  le texte que renvoient des bibliothèques tierces (par exemple le détail
-  d'une erreur de `rawloader` ou de LibRaw) reste en anglais.
-* Le moteur en ligne de commande (`convert-images-engine`, son aide et ses
-  messages) est en anglais.
+* The Spanish and German translations have not yet been reviewed by native
+  speakers: corrections are welcome (see `CONTRIBUTING.md`, in French, which
+  also explains how to add a language).
+* Error messages produced by the engine itself are translated; text coming
+  back from third-party libraries (for example the detail of a `rawloader`
+  or LibRaw error) stays in English.
+* The command-line engine (`convert-images-engine`, its help and its
+  messages) is in English.
 
 ## Formats
 
 | | Formats |
 |---|---|
-| **Sources** | RAW (extensions reconnues : CR2/CR3, NEF/NRW, ARW/SRF/SR2, DNG, ORF, RAF, RW2, PEF, SRW, X3F, 3FR, RWL, GPR… ; voir « Compatibilité RAW »), JPEG, PNG, TIFF, BMP, GIF, WebP |
-| **Destinations** | JPEG (qualité réglable, 100 par défaut), PNG, TIFF (non compressé), BMP, WebP sans perte (VP8L) |
+| **Sources** | RAW (recognized extensions: CR2/CR3, NEF/NRW, ARW/SRF/SR2, DNG, ORF, RAF, RW2, PEF, SRW, X3F, 3FR, RWL, GPR…; see "RAW compatibility"), JPEG, PNG, TIFF, BMP, GIF, WebP |
+| **Destinations** | JPEG (adjustable quality, 100 by default), PNG, TIFF (uncompressed), BMP, lossless WebP (VP8L) |
 
-PNG, TIFF, BMP et WebP sont **authentiquement sans perte**, vérifié par
-comparaison pixel à pixel (canal alpha et 16 bits compris). JPEG reste par
-nature un format avec perte — limite du format lui-même, pas de cet outil,
-et jamais présentée comme autre chose. La détection se fait par extension,
-puis par analyse du contenu, avec en dernier recours une tentative de
-décodage réel. Les RAW sont décodés à pleine résolution (zone active du
-capteur).
+PNG, TIFF, BMP and WebP are **genuinely lossless**, verified by pixel-by-pixel
+comparison (alpha channel and 16-bit included). JPEG remains a lossy format
+by nature — a limit of the format itself, not of this tool, and never
+presented as anything else. Detection is done by extension, then by content
+analysis, with an actual decoding attempt as a last resort. RAW files are
+decoded at full resolution (active sensor area).
 
-Le moteur, l'extension et l'IHM sont découplés (voir `ARCHITECTURE.md`) :
-le moteur (`convert-images-engine`) est un exécutable CLI autonome,
-utilisable indépendamment de Nautilus ou de GTK.
+The engine, the extension and the GUI are decoupled (see
+`ARCHITECTURE.md`): the engine (`convert-images-engine`) is a standalone CLI
+executable, usable independently of Nautilus or GTK.
 
-## Compatibilité RAW
+## RAW compatibility
 
-Reconnaître un fichier comme RAW (par son extension) ne garantit pas de
-pouvoir le décoder : cela dépend de l'appareil.
+Recognizing a file as RAW (by its extension) does not guarantee that it can
+be decoded: it depends on the camera.
 
-* **Une conversion, pas un développement** — pour un fichier RAW en
-  entrée, le rendu est celui des données brutes du boîtier : balance des
-  blancs de l'appareil et conversion en sRGB, sans retouche (pas de
-  correction d'objectif — vignetage, distorsion —, pas de netteté ni de
-  réduction de bruit, pas de réglage créatif d'exposition ou de contraste).
-  Ce n'est donc ni le rendu du JPEG du boîtier (plus contrasté, coins
-  corrigés, parfois recadré en 16:9 alors que l'image convertie couvre tout
-  le capteur), ni celui d'un logiciel de développement comme darktable ou
-  RawTherapee, qui ajoutent leurs propres réglages par défaut. Pour un
-  résultat travaillé, convertissez en TIFF ou PNG 16 bits et retouchez dans
-  un tel logiciel.
-* **Ordre de décodage** — `rawloader` d'abord ; s'il ne connaît pas le
-  boîtier, repli automatique sur [LibRaw](https://www.libraw.org/),
-  embarquée dans le programme. Si les deux échouent, l'erreur est affichée
-  pour ce fichier et le lot continue avec le suivant.
-* **Testé en usage réel** — uniquement des fichiers Sony ARW, dont ceux du
-  RX100 VI (absent de la base de `rawloader`, donc décodé par le repli).
-  Canon, Nikon, Fujifilm, Olympus, Panasonic, Pentax, Sigma, DNG… sont pris
-  en charge d'après ce qu'annoncent `rawloader` et LibRaw, mais n'ont pas
-  été vérifiés par l'auteur ; la fidélité des couleurs peut varier d'un
-  boîtier à l'autre.
-* **Limites du repli LibRaw** — il est compilé sans les bibliothèques
-  facultatives : il ne lit ni les DNG compressés avec perte (JPEG) ou en
-  virgule flottante compressée (deflate), ni les Sigma Foveon (X3F ;
-  `rawloader` en lit certains). Le CR3 de Canon n'existe pas dans
-  `rawloader` : il dépend donc entièrement du repli, et n'a pas été testé.
-* **Deux décodeurs, deux rendus** — le décodeur principal (`imagepipe`)
-  applique une courbe de tons de base légère pour passer du signal linéaire
-  du capteur à un aspect naturel ; le repli LibRaw n'en applique pas et ses
-  images tendent à paraître plus sombres. Un lot qui mêle des boîtiers
-  traités par l'un et par l'autre peut donc présenter des luminosités un
-  peu différentes.
-* **Fichier refusé ou aux couleurs douteuses ?** Signalez-le via les
-  [issues](https://github.com/gillesmagneville/nautilus-convert-images/issues)
-  en indiquant le modèle d'appareil.
+* **A conversion, not a development** — for a RAW input file, the result
+  is the camera's raw data as it is: the camera's white balance and a
+  conversion to sRGB, with no retouching (no lens correction — vignetting,
+  distortion —, no sharpening or noise reduction, no creative exposure or
+  contrast adjustment). It is therefore neither the rendering of the
+  camera's JPEG (more contrasty, corners corrected, sometimes cropped to
+  16:9 whereas the converted image covers the whole sensor), nor that of a
+  RAW developer such as darktable or RawTherapee, which add their own
+  default adjustments. For a finished result, convert to 16-bit TIFF or
+  PNG and retouch in such a program.
+* **Decoding order** — `rawloader` first; if it does not know the camera,
+  automatic fallback to [LibRaw](https://www.libraw.org/), built into the
+  program. If both fail, the error is shown for that file and the batch
+  carries on with the next one.
+* **Tested with real files** — only Sony ARW files, including those from
+  the RX100 VI (absent from `rawloader`'s database, hence decoded by the
+  fallback). Canon, Nikon, Fujifilm, Olympus, Panasonic, Pentax, Sigma,
+  DNG… are supported according to what `rawloader` and LibRaw announce, but
+  have not been verified by the author; color fidelity may vary from one
+  camera to another.
+* **Limits of the LibRaw fallback** — it is built without the optional
+  libraries: it reads neither lossy-compressed (JPEG) DNG files nor
+  floating-point compressed (deflate) DNG files, nor Sigma Foveon files
+  (X3F; `rawloader` reads some of them). Canon's CR3 does not exist in
+  `rawloader`: it therefore depends entirely on the fallback, and has not
+  been tested.
+* **Two decoders, two renderings** — the main decoder (`imagepipe`) applies
+  a light base tone curve to go from the sensor's linear signal to a
+  natural look; the LibRaw fallback does not, and its images tend to look
+  darker. A batch that mixes cameras handled by one and by the other can
+  therefore show slightly different brightness.
+* **A file refused, or with doubtful colors?** Report it through the
+  [issues](https://github.com/gillesmagneville/nautilus-convert-images/issues),
+  stating the camera model.
 
 ## Getting set up
 
-Pour compiler depuis les sources :
+To build from source:
 
 ```bash
 git clone https://github.com/gillesmagneville/nautilus-convert-images.git ~/Projects/nautilus-convert-images
@@ -171,123 +171,120 @@ cd ~/Projects/nautilus-convert-images
 cargo build
 ```
 
-Dépendances de build pour l'IHM et l'extension (pas seulement le moteur
-Rust) :
+Build dependencies for the GUI and the extension (not only the Rust
+engine):
 
 ```bash
 sudo apt-get install rustc cargo libgtk-4-dev python3-gi gir1.2-gtk-4.0 \
     python3-nautilus pkg-config build-essential gettext
 ```
 
-`gettext` fournit `msgfmt`, qui compile les traductions (`po/*.po`) lors de
-l'empaquetage ; il n'est pas nécessaire pour un simple `cargo build`.
+`gettext` provides `msgfmt`, which compiles the translations (`po/*.po`)
+when packaging; it is not needed for a plain `cargo build`.
 
-`build-essential` fournit `g++`, nécessaire pour compiler LibRaw (C++)
-embarquée dans `vendor/` : la première compilation est donc plus longue
-(quelques minutes), les suivantes sont incrémentales.
+`build-essential` provides `g++`, needed to compile the LibRaw (C++) built
+into `vendor/`: the first build is therefore longer (a few minutes), later
+ones are incremental.
 
 ## Packaging
 
-Deux scripts construisent des paquets natifs via
-[fpm](https://fpm.readthedocs.io/) — `build-deb.sh` (Debian/Ubuntu) et
-`build-rpm.sh` (Fedora/RHEL/Rocky/AlmaLinux). Les deux suivent le même
-flux : choix d'un incrément de version (interactif ou par flag),
-compilation en mode release, staging du moteur + de l'IHM + de l'extension
-+ des traductions compilées + de la documentation, puis empaquetage. `VERSION` et `Cargo.toml` ne sont
-mis à jour qu'après un build entièrement réussi — une compilation ou un
-`fpm` en échec laisse le dépôt inchangé. Une brève confirmation est
-demandée avant de construire, sauf si un flag de version a déjà été fourni
-sans terminal interactif attaché à stdin (contexte script/CI — le flag
-lui-même vaut confirmation) ou si `--yes`/`-y` est passé explicitement.
-Lancer sans flag de version et sans terminal interactif disponible échoue
-immédiatement avec un message clair. Le nom du fichier `.rpm` généré
-contient un suffixe `-1` après le numéro de version (ex.
-`nautilus-convert-images-1.2.3-1.x86_64.rpm`) — c'est le champ « Release »
-du format RPM, fixé à 1 par défaut par `fpm`. Le format `.deb` n'a pas
-cette notion. Ni `VERSION` ni `Cargo.toml` ne contiennent jamais ce suffixe.
+Two scripts build native packages via [fpm](https://fpm.readthedocs.io/) —
+`build-deb.sh` (Debian/Ubuntu) and `build-rpm.sh`
+(Fedora/RHEL/Rocky/AlmaLinux). Both follow the same flow: choice of a
+version increment (interactive or by flag), release-mode build, staging of
+the engine + the GUI + the extension + the compiled translations + the
+documentation, then packaging.
+`VERSION` and `Cargo.toml` are only updated after a fully successful build
+— a failed compilation or `fpm` run leaves the repository unchanged. A
+short confirmation is asked before building, unless a version flag was
+already given without an interactive terminal attached to stdin
+(script/CI context — the flag itself counts as confirmation) or `--yes`/`-y`
+is passed explicitly. Running without a version flag and without an
+interactive terminal fails immediately with a clear message. The generated
+`.rpm` file name contains a `-1` suffix after the version number (e.g.
+`nautilus-convert-images-1.2.3-1.x86_64.rpm`) — this is the RPM "Release"
+field, set to 1 by default by `fpm`. The `.deb` format has no such notion.
+Neither `VERSION` nor `Cargo.toml` ever contain this suffix.
 
 ```bash
-./build-deb.sh --patch   # ou --minor / --major / --no-version-change
+./build-deb.sh --patch   # or --minor / --major / --no-version-change
 ./build-rpm.sh --patch
-./build-deb.sh --patch --yes   # sans confirmation
-./build-deb.sh --clean         # supprime les artefacts de build et les .deb générés
+./build-deb.sh --patch --yes   # without confirmation
+./build-deb.sh --clean         # removes build artifacts and generated .deb files
 ```
 
-`MAINTAINER` et `URL`, en haut de chaque script, sont déjà renseignés pour
-ce dépôt ; adaptez-les dans un fork. Les deux scripts vérifient la présence
-des outils requis (`fpm`, `cargo`, `msgfmt`, et `dpkg-deb` ou `rpmbuild`
-respectivement) et expliquent quoi installer si quelque chose manque —
-lisez ce message attentivement : sur un « aucun incrément de version n'a eu
-lieu » silencieux, la cause la plus probable est un contrôle d'outil en
-échec (par exemple `fpm` pas réellement installé — il s'installe avec
-`gem install --user-install fpm`, pas un paquet de distribution), puisqu'un
-incrément n'est jamais écrit avant qu'un build ait entièrement réussi.
+`MAINTAINER` and `URL`, at the top of each script, are already filled in for
+this repository; adapt them in a fork. Both scripts check that the required
+tools are present (`fpm`, `cargo`, `msgfmt`, and `dpkg-deb` or `rpmbuild`
+respectively) and explain what to install if something is missing — read
+that message carefully: on a silent "no version increment took place", the
+most likely cause is a failed tool check (for example `fpm` not actually
+installed — it is installed with `gem install --user-install fpm`, not a
+distribution package), since an increment is never written before a build
+has fully succeeded.
 
-`VERSION` est versionné avec le code : il correspond au tag de la dernière
+`VERSION` is versioned with the code: it matches the tag of the latest
 release.
 
-### Publier une release
+### Publishing a release
 
-Après les builds habituels (`VERSION` à jour, `.deb` et `.rpm` générés),
-`release.sh` publie la release GitHub correspondante : contrôles
-préalables, reconstruction des paquets si nécessaire, commit et push de
-`main`, puis création de la release avec les deux paquets et un fichier
-`.sha256` par paquet. Il nécessite [`gh`](https://cli.github.com/)
-authentifié.
+After the usual builds (`VERSION` up to date, `.deb` and `.rpm` generated),
+`release.sh` publishes the matching GitHub release: preliminary checks,
+rebuilding the packages if needed, commit and push of `main`, then creation
+of the release with both packages and one `.sha256` file per package. It
+requires an authenticated [`gh`](https://cli.github.com/).
 
 ```bash
-./release.sh --dry-run   # aperçu, rien n'est modifié ni publié
+./release.sh --dry-run   # preview, nothing is modified or published
 ./release.sh
 ```
 
 ## Runtime dependencies
 
-Le moteur (`convert-images-engine`) ne dépend d'aucune bibliothèque
-externe au-delà de ce que `cargo build` lie statiquement — en particulier
-aucune bibliothèque LibRaw à installer : elle est embarquée statiquement
-(voir « Philosophie des dépendances » dans `ARCHITECTURE.md`). L'IHM et l'extension nécessitent, au moment de
-l'exécution : `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (noms de
-paquets Debian/Ubuntu ; `python3-gobject`, `gtk4`, `nautilus-python` sur
-Fedora) — déjà déclarés comme dépendances par les deux scripts de
-packaging. Les traductions n'ajoutent aucune dépendance : elles reposent
-sur le module `gettext` de la bibliothèque standard de Python.
+The engine (`convert-images-engine`) depends on no external library beyond
+what `cargo build` links statically — in particular there is no LibRaw
+library to install: it is statically embedded (see "Philosophie des
+dépendances" in `ARCHITECTURE.md`, in French). The GUI and the extension need, at run time:
+`python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (Debian/Ubuntu package
+names; `python3-gobject`, `gtk4`, `nautilus-python` on Fedora) — already
+declared as dependencies by both packaging scripts. The translations add no
+dependency: they rely on the `gettext` module of Python's standard library.
 
 ## Quickstart
 
-Le moteur s'utilise aussi seul, en ligne de commande :
+The engine can also be used on its own, from the command line:
 
 ```bash
 cargo build --release
 ./target/release/convert-images-engine formats
 ./target/release/convert-images-engine detect --recursive ~/Photos
 ./target/release/convert-images-engine convert --recursive ~/Photos \
-    --output-dir ~/Photos/converti --format png
+    --output-dir ~/Photos/converted --format png
 ```
 
 ## Tests
 
-Le moteur a été validé par comparaison pixel à pixel (PNG/TIFF/BMP/WebP
-identiques bit à bit à la source, y compris avec canal alpha et
-profondeur 16 bits ; JPEG avec un écart minime et attendu à qualité 100),
-l'extension Nautilus avec les vraies bibliothèques GObject Introspection,
-et l'IHM par un scénario de bout en bout sous Xvfb (détection →
-conversion → fichiers produits). Le repli LibRaw est couvert par des
-tests unitaires (`cargo test`) sur un DNG synthétique, et a été vérifié sur
-de vrais fichiers `.arw` du Sony DSC-RX100M6 (absent de la base de
-`rawloader`) ; la fidélité sur les autres appareils est validée au cas par
-cas.
+The engine was validated by pixel-by-pixel comparison (PNG/TIFF/BMP/WebP
+bit-identical to the source, including with an alpha channel and 16-bit
+depth; JPEG with a minimal, expected difference at quality 100), the
+Nautilus extension with the real GObject Introspection libraries, and the
+GUI by an end-to-end scenario under Xvfb (detection → conversion → files
+produced). The LibRaw fallback is covered by unit tests (`cargo test`) on a
+synthetic DNG, and was verified on real `.arw` files from the Sony
+DSC-RX100M6 (absent from `rawloader`'s database); fidelity on other cameras
+is validated case by case.
 
 ```bash
 cargo build --release && ./target/release/convert-images-engine formats
 ```
 
-Les traductions et l'IHM ont leurs propres tests Python (`tests/`) :
-catalogues complets, champs `{…}` identiques à la source, messages du
-moteur traduits, entrée du menu Nautilus dans chaque langue, et vraie IHM
-lancée sous Xvfb avec le vrai moteur en anglais, français, espagnol et
-allemand, avec repli sur l'anglais pour une langue non gérée. Les tests qui
-ont besoin d'un outil absent (`msgfmt`, `xgettext`, PyGObject/GTK4,
-`xvfb-run`, ImageMagick, moteur compilé) sont ignorés, pas en échec.
+The translations and the GUI have their own Python tests (`tests/`):
+complete catalogs, `{…}` placeholders identical to the source text, engine
+messages translated, the Nautilus menu entry in each language, and the real
+GUI launched under Xvfb with the real engine in English, French, Spanish
+and German, falling back to English for an unsupported language. Tests that
+need a missing tool (`msgfmt`, `xgettext`, PyGObject/GTK4, `xvfb-run`,
+ImageMagick, a built engine) are skipped, not failed.
 
 ```bash
 cargo build --release
@@ -296,80 +293,77 @@ python3 -m unittest discover -s tests -v
 
 ## Toolchain note
 
-Ce projet a été développé et testé avec `rustc`/`cargo` 1.75 (paquet apt
-d'Ubuntu 24.04) — la même contrainte que documentée dans le README de
-`linuxdoctor` pour `clap`. Plusieurs dépendances sont figées dans
-`Cargo.toml` pour cette MSRV :
+This project was developed and tested with `rustc`/`cargo` 1.75 (the apt
+package of Ubuntu 24.04) — the same constraint as documented in the
+`linuxdoctor` README for `clap`. Several dependencies are pinned in
+`Cargo.toml` for this MSRV:
 
-* `clap` à `4.5.57` — les `clap_builder` plus récents (via `clap_lex`
-  1.x) déclarent `edition2024`, qui exige Cargo ≥ 1.85 juste pour être
-  analysé.
-* `imagepipe` à `=0.5.0` (pas seulement `0.5`) — `0.5.1` dépend d'`image`
-  `^0.25`, qui tire `moxcms`, également `edition2024`.
-* `image` à `0.24` — la branche `0.25` a le même problème.
-* `blake3` à `=1.8.2`, `rayon`/`rayon-core` à `1.10.0`/`1.12.1`, `half` à
-  `2.4.1`, `exr` à `1.74.0`, `uuid` à `1.20.0`, `lebe` à `0.5.2` —
-  dépendances transitives d'`imagepipe`/`image`, chacune figée à la
-  dernière version encore compatible avec Rust 1.75 (MSRV déclarée ou
-  `edition2024` requis, selon le cas).
+* `clap` at `4.5.57` — newer `clap_builder` versions (via `clap_lex` 1.x)
+  declare `edition2024`, which requires Cargo ≥ 1.85 just to be parsed.
+* `imagepipe` at `=0.5.0` (not just `0.5`) — `0.5.1` depends on `image`
+  `^0.25`, which pulls in `moxcms`, also `edition2024`.
+* `image` at `0.24` — the `0.25` branch has the same problem.
+* `blake3` at `=1.8.2`, `rayon`/`rayon-core` at `1.10.0`/`1.12.1`, `half`
+  at `2.4.1`, `exr` at `1.74.0`, `uuid` at `1.20.0`, `lebe` at `0.5.2` —
+  transitive dependencies of `imagepipe`/`image`, each pinned to the latest
+  version still compatible with Rust 1.75 (declared MSRV or `edition2024`
+  required, depending on the case).
 
-Si vous êtes sur un toolchain plus récent (1.85+), toutes ces contraintes
-sont sûres à relâcher — `cargo update` reprendra les versions actuelles
-sans aucun changement de code. Ces versions figées compilent et
-fonctionnent parfaitement dans l'intervalle : ce n'est pas une limite du
-projet, seulement du toolchain de test.
+If you are on a newer toolchain (1.85+), all these constraints are safe to
+relax — `cargo update` will pick up the current versions with no code
+change. These pinned versions build and work perfectly in the meantime:
+this is not a limit of the project, only of the test toolchain.
 
 ## Layout
 
 ```
 nautilus-convert-images/
 ├── .gitignore
-├── VERSION                  # version courante (= tag de la dernière release)
-├── CHANGELOG.md              # format Keep a Changelog
-├── CONTRIBUTING.md            # signaler un bug, ajouter un format, style de code
-├── build-deb.sh                 # empaquetage .deb (fpm)
-├── build-rpm.sh                   # empaquetage .rpm (fpm)
-├── release.sh                       # publication de la release GitHub
+├── VERSION                  # current version (= tag of the latest release)
+├── CHANGELOG.md              # Keep a Changelog format (in French)
+├── CONTRIBUTING.md            # reporting a bug, adding a format, code style
+├── build-deb.sh                 # .deb packaging (fpm)
+├── build-rpm.sh                   # .rpm packaging (fpm)
+├── release.sh                       # GitHub release publishing
 ├── Cargo.toml
 ├── Cargo.lock
-├── README.md                  # version française
-├── README.en.md                 # version anglaise
+├── README.md                  # English version (shown by default on GitHub; this file)
+├── README.fr.md                 # French version
 ├── PROJECT_CONTEXT.md
 ├── ARCHITECTURE.md
 │
 ├── src/                       # convert-images-engine (Rust)
-│   ├── main.rs                 # point d'entrée CLI, sortie JSON en flux
-│   ├── cli.rs                   # clap, énumération récursive des fichiers
-│   ├── formats.rs                # détection de format (standard + RAW)
-│   ├── raw.rs                     # décodage RAW (rawloader + imagepipe, repli LibRaw)
-│   ├── libraw.rs                   # décodeur de secours (LibRaw)
-│   └── convert.rs                  # décodage + encodage vers le format cible
+│   ├── main.rs                 # CLI entry point, streamed JSON output
+│   ├── cli.rs                   # clap, recursive file enumeration
+│   ├── formats.rs                # format detection (standard + RAW)
+│   ├── raw.rs                     # RAW decoding (rawloader + imagepipe, LibRaw fallback)
+│   ├── libraw.rs                   # fallback decoder (LibRaw)
+│   └── convert.rs                  # decoding + encoding to the target format
 │
 ├── vendor/
-│   └── libraw-sys/              # LibRaw (C++) et ses liaisons, compilée statiquement
+│   └── libraw-sys/              # LibRaw (C++) and its bindings, statically compiled
 │
 ├── nautilus-extension/
-│   ├── convert_images_nautilus.py    # extension nautilus-python
-│   └── convert-images-gui             # IHM GTK4 autonome
+│   ├── convert_images_nautilus.py    # nautilus-python extension
+│   └── convert-images-gui             # standalone GTK4 GUI
 │
-├── po/                            # traductions (gettext)
-│   ├── nautilus-convert-images.pot   # modèle : textes source, en anglais
-│   ├── fr.po  es.po  de.po           # une traduction par langue
-│   └── update-po.sh                   # régénère le .pot, met à jour les .po
+├── po/                            # translations (gettext)
+│   ├── nautilus-convert-images.pot   # template: source texts, in English
+│   ├── fr.po  es.po  de.po           # one translation per language
+│   └── update-po.sh                   # regenerates the .pot, updates the .po files
 │
 ├── tests/
-│   ├── test_i18n.py                 # catalogues, messages du moteur, IHM par langue
-│   └── gui_smoke.py                  # lance la vraie IHM (sous Xvfb) et rapporte
+│   ├── test_i18n.py                 # catalogs, engine messages, GUI per language
+│   └── gui_smoke.py                  # launches the real GUI (under Xvfb) and reports
 │
 └── packaging/
     ├── nautilus-convert-images.desktop
-    └── postinst                        # redémarre Nautilus après installation
+    └── postinst                        # restarts Nautilus after installation
 ```
 
 ## License
 
-GPL-3.0-only. Voir [LICENSE](LICENSE).
+GPL-3.0-only. See [LICENSE](LICENSE).
 
-nautilus-convert-images est développé par Gilles MAGNEVILLE. Gilles n'est
-pas développeur professionnel — ce projet a été construit avec l'aide de
-Claude.ai.
+nautilus-convert-images is developed by Gilles MAGNEVILLE. Gilles is not a
+professional developer — this project was built with the help of Claude.ai.

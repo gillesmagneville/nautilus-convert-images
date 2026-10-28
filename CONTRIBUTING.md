@@ -61,7 +61,7 @@ En résumé :
 - N'annoncez jamais un format comme « sans perte » s'il ne l'est pas
   réellement — voir « Fiabilité et transparence » dans
   `PROJECT_CONTEXT.md`. En cas de doute, vérifiez par comparaison pixel à
-  pixel (voir la section « État des tests » du `README.md` pour la
+  pixel (voir la section « Tests » du `README.fr.md` pour la
   méthode utilisée jusqu'ici).
 - Aucun redimensionnement ni recadrage ajouté, même optionnel, sans en
   discuter d'abord dans une issue — c'est un principe fondateur du projet
@@ -140,6 +140,10 @@ nouvelle option CLI, nouveau schéma JSON, nouveau texte d'interface),
 mettez à jour `CHANGELOG.md`
 dans la même pull request, sous `[Non publié]`, et `ARCHITECTURE.md` si le
 contrat technique change.
+
+Le README existe en deux langues : `README.md` (anglais, affiché par défaut
+sur GitHub) et `README.fr.md` (français). Si vous modifiez l'un, modifiez
+aussi l'autre.
 
 ## Questions
 

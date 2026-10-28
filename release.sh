@@ -144,8 +144,8 @@ TODAY="$(date +%F)"
 export VERSION TODAY
 
 RAW_TESTED="${RAW_TESTED:-}"
-if [ -z "$RAW_TESTED" ] && grep -q "Le décodage RAW a, lui, été validé" README.md; then
-  RAW_TESTED=1   # deja declare lors d'une release precedente (voir README.md)
+if [ -z "$RAW_TESTED" ] && grep -q "Le décodage RAW a, lui, été validé" README.fr.md; then
+  RAW_TESTED=1   # deja declare lors d'une release precedente (voir README.fr.md)
 fi
 if [ -z "$RAW_TESTED" ]; then
   if ! $ASSUME_YES && [ -t 0 ]; then
@@ -242,7 +242,7 @@ patch("build-deb.sh", fix_maint, "MAINTAINER réel")
 patch("build-rpm.sh", fix_maint, "MAINTAINER réel")
 patch("build-rpm.sh", fix_deps, "dépendances Fedora/RHEL (python3-gobject, gtk4, nautilus-python)")
 patch("Cargo.toml", sync_cargo, f"version = {version}")
-patch("README.md", readme, "statut « stable »" + (" + décodage RAW validé" if raw_tested else ""))
+patch("README.fr.md", readme, "statut « stable »" + (" + décodage RAW validé" if raw_tested else ""))
 patch("CHANGELOG.md", changelog, f"entrée {today} (release v{version})")
 
 for c in changes:
@@ -323,7 +323,7 @@ stale_sources() {
   local pkg="$1"
   [ -f "$pkg" ] || return 0
   find src nautilus-extension packaging po Cargo.toml Cargo.lock build-deb.sh build-rpm.sh \
-       README.md README.en.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE \
+       README.md README.fr.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE \
        -type f -newer "$pkg" -print -quit 2>/dev/null
 }
 

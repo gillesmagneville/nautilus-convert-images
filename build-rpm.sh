@@ -240,7 +240,7 @@ if [ "$I18N_COUNT" -eq 0 ]; then
   exit 1
 fi
 echo "    $I18N_COUNT langue(s) installee(s)."
-for doc in README.md README.en.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE; do
+for doc in README.md README.fr.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE; do
   [ -f "$PROJECT_DIR/$doc" ] && cp "$PROJECT_DIR/$doc" "$BUILD_DIR/usr/share/doc/$PACKAGE_NAME/"
 done
 
