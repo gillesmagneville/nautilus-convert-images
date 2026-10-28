@@ -107,6 +107,8 @@ that the menu entry follows.
   or LibRaw error) stays in English.
 * The command-line engine (`convert-images-engine`, its help and its
   messages) is in English.
+* The message printed when the package is installed (Nautilus restarted)
+  follows the same language rules, with the same English fallback.
 
 ## Formats
 
@@ -288,7 +290,9 @@ The translations and the GUI have their own Python tests (`tests/`):
 complete catalogs, `{…}` placeholders identical to the source text, engine
 messages translated, the Nautilus menu entry in each language, and the real
 GUI launched under Xvfb with the real engine in English, French, Spanish
-and German, falling back to English for an unsupported language. Tests that
+and German, falling back to English for an unsupported language. Another
+test runs the install script (`packaging/postinst`) with a fake Nautilus and
+checks that it picks the same language as `gettext` does. Tests that
 need a missing tool (`msgfmt`, `xgettext`, PyGObject/GTK4, `xvfb-run`,
 ImageMagick, a built engine) are skipped, not failed.
 
@@ -361,13 +365,14 @@ nautilus-convert-images/
 ├── tests/
 │   ├── test_i18n.py                 # catalogs, engine messages, GUI per language
 │   ├── test_gui_log.py              # a long log line wraps instead of overflowing
+│   ├── test_postinst.py             # install message follows the system language
 │   ├── gui_smoke.py                  # launches the real GUI (under Xvfb) and reports
 │   ├── gui_log_wrap.py               # measures the log layout in the real GUI
 │   └── fedora/                       # tests the .rpm in a real Fedora (podman/docker)
 │
 └── packaging/
     ├── nautilus-convert-images.desktop
-    └── postinst                        # restarts Nautilus after installation
+    └── postinst                        # restarts Nautilus after installation (message in en/fr/es/de)
 ```
 
 ## License

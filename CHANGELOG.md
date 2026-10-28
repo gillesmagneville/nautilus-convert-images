@@ -14,8 +14,21 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
 
 ## [Non publié]
 
+### Modifié
+
+- **Message d'installation dans la langue du système.** Quand l'installation du
+  paquet redémarre Nautilus, le message s'affiche en anglais, français,
+  espagnol ou allemand selon la langue de la session (mêmes règles que
+  l'entrée de menu : `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`), avec repli
+  sur l'anglais pour toute autre langue. Il était auparavant uniquement en
+  français. Les traductions espagnole et allemande n'ont pas été relues par des
+  locuteurs natifs.
+
 ### Ajouté
 
+- Test du script d'installation (`tests/test_postinst.py`) : faux Nautilus,
+  langues gérées et non gérées, ordre de priorité des variables, comparaison
+  avec le choix réel de `gettext`.
 - **Test du paquet `.rpm` dans un vrai Fedora** (`tests/fedora/test-fedora.sh`) :
   lance un conteneur Fedora (podman ou docker), y installe le `.rpm` avec `dnf`,
   vérifie son contenu, le moteur, GTK 4 et l'extension Nautilus (vraies liaisons

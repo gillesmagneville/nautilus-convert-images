@@ -1,14 +1,55 @@
 #!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# Script post-installation (fpm --after-install), exécuté en root.
 set -e
 
 # Redémarre Nautilus s'il est en cours d'exécution, pour qu'il recharge
 # la liste des extensions Python et prenne en compte
 # nautilus-convert-images immédiatement (sinon, l'entrée de menu
 # n'apparaît qu'à la prochaine ouverture de session).
+#
+# Le message affiché suit la langue du système : anglais, français, espagnol
+# ou allemand, avec repli sur l'anglais. La langue est choisie selon les mêmes
+# règles que gettext (et donc que l'entrée de menu elle-même) : on prend la
+# première variable non vide parmi LANGUAGE, LC_ALL, LC_MESSAGES et LANG ; elle
+# peut contenir plusieurs langues séparées par « : », la première langue
+# disponible gagne ; « C » et « POSIX » arrêtent la recherche (anglais).
+# Ce bloc est volontairement identique dans le postinst de raw-thumbs.
+pick_language() {
+    _lang=en
+    _list=
+    for _var in "${LANGUAGE:-}" "${LC_ALL:-}" "${LC_MESSAGES:-}" "${LANG:-}"; do
+        if [ -n "$_var" ]; then
+            _list=$_var
+            break
+        fi
+    done
+    _old_ifs=$IFS
+    IFS=:
+    set -f
+    for _entry in $_list; do
+        case $_entry in
+            C | C.* | POSIX | POSIX.*) break ;;
+            fr | fr_* | fr.* | fr@*) _lang=fr; break ;;
+            es | es_* | es.* | es@*) _lang=es; break ;;
+            de | de_* | de.* | de@*) _lang=de; break ;;
+        esac
+    done
+    set +f
+    IFS=$_old_ifs
+    echo "$_lang"
+}
+
 if command -v nautilus >/dev/null 2>&1; then
     if pgrep -x nautilus >/dev/null 2>&1; then
         nautilus -q >/dev/null 2>&1 || true
-        echo "nautilus-convert-images : Nautilus a été redémarré pour activer la nouvelle entrée de menu."
+        case "$(pick_language)" in
+            fr) echo "nautilus-convert-images : Nautilus a été redémarré pour activer la nouvelle entrée de menu." ;;
+            es) echo "nautilus-convert-images: Nautilus se ha reiniciado para activar la nueva entrada de menú." ;;
+            de) echo "nautilus-convert-images: Nautilus wurde neu gestartet, um den neuen Menüeintrag zu aktivieren." ;;
+            *)  echo "nautilus-convert-images: Nautilus was restarted to enable the new menu entry." ;;
+        esac
     fi
 fi
 

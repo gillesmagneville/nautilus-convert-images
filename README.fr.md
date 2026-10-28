@@ -104,6 +104,8 @@ Après un changement de langue de la session, redémarrez Nautilus
 * Les messages d'erreur que le moteur produit lui-même sont traduits ;
   le texte que renvoient des bibliothèques tierces (par exemple le détail
   d'une erreur de `rawloader` ou de LibRaw) reste en anglais.
+* Le message affiché à l'installation du paquet (Nautilus redémarré) suit les
+  mêmes règles de langue, avec le même repli sur l'anglais.
 * Le moteur en ligne de commande (`convert-images-engine`, son aide et ses
   messages) est en anglais.
 
@@ -291,7 +293,9 @@ Les traductions et l'IHM ont leurs propres tests Python (`tests/`) :
 catalogues complets, champs `{…}` identiques à la source, messages du
 moteur traduits, entrée du menu Nautilus dans chaque langue, et vraie IHM
 lancée sous Xvfb avec le vrai moteur en anglais, français, espagnol et
-allemand, avec repli sur l'anglais pour une langue non gérée. Les tests qui
+allemand, avec repli sur l'anglais pour une langue non gérée. Un autre test
+exécute le script d'installation (`packaging/postinst`) avec un faux Nautilus
+et vérifie qu'il choisit la même langue que `gettext`. Les tests qui
 ont besoin d'un outil absent (`msgfmt`, `xgettext`, PyGObject/GTK4,
 `xvfb-run`, ImageMagick, moteur compilé) sont ignorés, pas en échec.
 
@@ -366,13 +370,14 @@ nautilus-convert-images/
 ├── tests/
 │   ├── test_i18n.py                 # catalogues, messages du moteur, IHM par langue
 │   ├── test_gui_log.py              # une ligne longue du journal passe à la ligne
+│   ├── test_postinst.py             # le message d'installation suit la langue du système
 │   ├── gui_smoke.py                  # lance la vraie IHM (sous Xvfb) et rapporte
 │   ├── gui_log_wrap.py               # mesure la mise en page du journal dans la vraie IHM
 │   └── fedora/                       # teste le .rpm dans un vrai Fedora (podman/docker)
 │
 └── packaging/
     ├── nautilus-convert-images.desktop
-    └── postinst                        # redémarre Nautilus après installation
+    └── postinst                        # redémarre Nautilus après installation (message en en/fr/es/de)
 ```
 
 ## License

@@ -80,13 +80,14 @@ nautilus-convert-images/
 ├── tests/
 │   ├── test_i18n.py                 # catalogues, messages du moteur, IHM par langue
 │   ├── test_gui_log.py              # une ligne longue du journal passe à la ligne
+│   ├── test_postinst.py             # le message d'installation suit la langue du système
 │   ├── gui_smoke.py                  # lance la vraie IHM sous Xvfb et rapporte ce qu'elle affiche
 │   ├── gui_log_wrap.py               # mesure la mise en page du journal dans la vraie IHM
 │   └── fedora/                       # teste le .rpm dans un vrai Fedora (podman/docker), voir CONTRIBUTING.md
 │
 └── packaging/
     ├── nautilus-convert-images.desktop  # lancement manuel de l'IHM hors menu contextuel
-    └── postinst                          # redémarre Nautilus après installation du paquet
+    └── postinst                          # redémarre Nautilus après installation du paquet (message en en/fr/es/de)
 ```
 
 ---
@@ -313,6 +314,25 @@ anglais, français, espagnol et allemand, avec [gettext](https://www.gnu.org/sof
   `CONVERT_IMAGES_LOCALEDIR` (dossier de catalogues autre que
   `/usr/share/locale`) et `CONVERT_IMAGES_ENGINE` (autre binaire du moteur)
   servent aux tests ; elles n'ont aucun usage en exploitation normale.
+
+## Message d'installation (`packaging/postinst`)
+
+Le script exécuté en root après l'installation du paquet affiche un message
+quand il redémarre Nautilus. Il n'utilise pas gettext (pas de catalogue
+disponible à ce stade, et il doit rester un `sh` POSIX minimal) : un petit
+bloc `case` contient les quatre textes. La langue est choisie par la fonction
+`pick_language`, qui reproduit les règles de gettext : première variable non
+vide parmi `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG` ; `LANGUAGE` peut
+contenir plusieurs langues séparées par « : » (la première disponible gagne) ;
+`C` et `POSIX` arrêtent la recherche ; sans correspondance, anglais.
+`tests/test_postinst.py` compare ce choix à celui de `gettext.find()` pour
+plus de trente configurations.
+
+* **Pour ajouter une langue** : ajouter son motif dans `pick_language` et son
+  texte dans le `case` du message, puis un marqueur et des cas dans
+  `tests/test_postinst.py`.
+* Le même bloc `pick_language` est copié dans le `postinst.sh` du dépôt
+  `raw-thumbs` : si les règles changent, changer les deux.
 
 ## Messages du moteur
 
