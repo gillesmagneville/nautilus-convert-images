@@ -12,7 +12,7 @@ appartient à votre environnement local, avancé uniquement par vos propres
 lancements réussis de `build-deb.sh`/`build-rpm.sh`. Les entrées de ce
 changelog utilisent donc une date plutôt qu'un numéro de version.
 
-## 2026-10-28 — v1.3.2
+## 2026-10-29 — v1.3.2
 
 ### Ajouté
 
