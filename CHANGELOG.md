@@ -12,6 +12,15 @@ appartient à votre environnement local, avancé uniquement par vos propres
 lancements réussis de `build-deb.sh`/`build-rpm.sh`. Les entrées de ce
 changelog utilisent donc une date plutôt qu'un numéro de version.
 
+## [Non publié]
+
+### Modifié
+
+- `release.sh` : quand `VERSION` est déjà publiée (tag local, tag GitHub ou
+  release existante), le message d'erreur dit maintenant quoi faire —
+  `./build-deb.sh --patch --yes` puis `./build-rpm.sh --no-version-change --yes`
+  (ou `--minor` / `--major`) pour passer à la version suivante.
+
 ## 2026-10-29 — v1.3.2
 
 ### Ajouté

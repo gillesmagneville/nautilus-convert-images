@@ -241,7 +241,8 @@ Après les builds habituels (`VERSION` à jour, `.deb` et `.rpm` générés),
 préalables, reconstruction des paquets si nécessaire, commit et push de
 `main`, puis création de la release avec les deux paquets et un fichier
 `.sha256` par paquet. Il nécessite [`gh`](https://cli.github.com/)
-authentifié.
+authentifié. Si `VERSION` est déjà publiée, il s'arrête et indique les
+commandes de build à lancer d'abord pour passer à la version suivante.
 
 ```bash
 ./release.sh --dry-run   # aperçu, rien n'est modifié ni publié

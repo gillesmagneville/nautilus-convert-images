@@ -239,7 +239,9 @@ After the usual builds (`VERSION` up to date, `.deb` and `.rpm` generated),
 `release.sh` publishes the matching GitHub release: preliminary checks,
 rebuilding the packages if needed, commit and push of `main`, then creation
 of the release with both packages and one `.sha256` file per package. It
-requires an authenticated [`gh`](https://cli.github.com/).
+requires an authenticated [`gh`](https://cli.github.com/). If `VERSION` is
+already published, it stops and tells you which build commands to run first
+to move on to the next version.
 
 ```bash
 ./release.sh --dry-run   # preview, nothing is modified or published

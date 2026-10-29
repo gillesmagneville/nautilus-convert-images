@@ -104,14 +104,24 @@ else
 fi
 export FIRST_RELEASE
 
+# Si VERSION est deja publiee, il suffit presque toujours d'avoir oublie de
+# passer a la version suivante : on dit quoi faire (VERSION n'avance que par
+# un build reussi, voir CHANGELOG.md).
+NEXT_HINT="VERSION ($VERSION) est deja publiee. Pour passer a la version suivante, lancez d'abord :
+    ./build-deb.sh --patch --yes     (ou --minor / --major a la place de --patch)
+    ./build-rpm.sh --no-version-change --yes
+  puis relancez ./release.sh."
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-  die "le tag $TAG existe deja en local."
+  die "le tag $TAG existe deja en local.
+  $NEXT_HINT"
 fi
 if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-  die "le tag $TAG existe deja sur GitHub."
+  die "le tag $TAG existe deja sur GitHub.
+  $NEXT_HINT"
 fi
 if gh release view "$TAG" --repo "$REPO_SLUG" >/dev/null 2>&1; then
-  die "une release $TAG existe deja sur GitHub."
+  die "une release $TAG existe deja sur GitHub.
+  $NEXT_HINT"
 fi
 
 # Vrai si le fichier fige la version de Nautilus par une instruction ACTIVE
