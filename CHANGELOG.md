@@ -16,21 +16,26 @@ a date rather than a version number.
 
 ## [Unreleased]
 
+## 2026-10-29 — v1.3.3
+
+Maintenance release: no functional change (the engine, the Nautilus
+extension and the GUI are identical to the previous version).
+
 ### Changed
 
-- `release.sh`: when `VERSION` is already published (local tag, GitHub tag or
-  existing release), the error message now says what to do —
-  `./build-deb.sh --patch --yes` then `./build-rpm.sh --no-version-change --yes`
-  (or `--minor` / `--major`) to move on to the next version.
+- **Bilingual documentation**: `ARCHITECTURE`, `CONTRIBUTING`,
+  `PROJECT_CONTEXT` and `CHANGELOG` now exist in English (`X.md`, shown by
+  default on GitHub) and in French (`X.fr.md`), with a link to switch
+  language at the top of each file. The `.deb` and `.rpm` packages now ship
+  both versions in `/usr/share/doc/nautilus-convert-images/`.
 - **Release notes are published in English first, then in French**, like the
   README (English by default). They come from today's entry in `CHANGELOG.md`
   (English) and in `CHANGELOG.fr.md` (French): `release.sh` stops before
   changing anything if either is missing.
-- **Bilingual documentation**: `ARCHITECTURE`, `CONTRIBUTING`,
-  `PROJECT_CONTEXT` and `CHANGELOG` now exist in English (`X.md`, shown by
-  default on GitHub) and in French (`X.fr.md`), with a link to switch
-  language at the top of each file. The `.deb` and `.rpm` packages ship both
-  versions.
+- `release.sh`: when `VERSION` is already published (local tag, GitHub tag or
+  existing release), the error message now says what to do —
+  `./build-deb.sh --patch --yes` then `./build-rpm.sh --no-version-change --yes`
+  (or `--minor` / `--major`) to move on to the next version.
 
 ## 2026-10-29 — v1.3.2
 

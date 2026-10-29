@@ -16,21 +16,27 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
 
 ## [Non publié]
 
+## 2026-10-29 — v1.3.3
+
+Version de maintenance : aucun changement fonctionnel (le moteur, l'extension
+Nautilus et l'IHM sont identiques à la version précédente).
+
 ### Modifié
 
-- `release.sh` : quand `VERSION` est déjà publiée (tag local, tag GitHub ou
-  release existante), le message d'erreur dit maintenant quoi faire —
-  `./build-deb.sh --patch --yes` puis `./build-rpm.sh --no-version-change --yes`
-  (ou `--minor` / `--major`) pour passer à la version suivante.
-- **Notes de release en anglais d'abord, puis en français** (comme le README,
-  anglais par défaut). Elles viennent de l'entrée du jour de `CHANGELOG.md`
-  (anglais) et de `CHANGELOG.fr.md` (français) : `release.sh` s'arrête avant
-  toute modification si l'une des deux manque.
 - **Documentation bilingue** : `ARCHITECTURE`, `CONTRIBUTING`,
   `PROJECT_CONTEXT` et `CHANGELOG` existent maintenant en anglais (`X.md`,
   affiché par défaut sur GitHub) et en français (`X.fr.md`), avec un lien pour
   changer de langue en haut de chaque fichier. Les paquets `.deb` et `.rpm`
-  embarquent les deux versions.
+  embarquent maintenant les deux versions dans
+  `/usr/share/doc/nautilus-convert-images/`.
+- **Notes de release en anglais d'abord, puis en français** (comme le README,
+  anglais par défaut). Elles viennent de l'entrée du jour de `CHANGELOG.md`
+  (anglais) et de `CHANGELOG.fr.md` (français) : `release.sh` s'arrête avant
+  toute modification si l'une des deux manque.
+- `release.sh` : quand `VERSION` est déjà publiée (tag local, tag GitHub ou
+  release existante), le message d'erreur dit maintenant quoi faire —
+  `./build-deb.sh --patch --yes` puis `./build-rpm.sh --no-version-change --yes`
+  (ou `--minor` / `--major`) pour passer à la version suivante.
 
 ## 2026-10-29 — v1.3.2
 
