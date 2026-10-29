@@ -2,251 +2,254 @@
 
 # Changelog
 
-Toutes les modifications notables de ce projet sont documentées dans ce fichier.
+🇫🇷 [Version française](CHANGELOG.fr.md)
 
-Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
-et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
+All notable changes to this project are documented in this file.
 
-Comme pour linuxdoctor, `VERSION` n'est pas livré avec le code source : il
-appartient à votre environnement local, avancé uniquement par vos propres
-lancements réussis de `build-deb.sh`/`build-rpm.sh`. Les entrées de ce
-changelog utilisent donc une date plutôt qu'un numéro de version.
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Non publié]
+As for linuxdoctor, `VERSION` is not shipped with the source code: it
+belongs to your local environment, advanced only by your own successful runs
+of `build-deb.sh`/`build-rpm.sh`. The entries in this changelog therefore use
+a date rather than a version number.
 
-### Modifié
+## [Unreleased]
 
-- `release.sh` : quand `VERSION` est déjà publiée (tag local, tag GitHub ou
-  release existante), le message d'erreur dit maintenant quoi faire —
-  `./build-deb.sh --patch --yes` puis `./build-rpm.sh --no-version-change --yes`
-  (ou `--minor` / `--major`) pour passer à la version suivante.
+### Changed
+
+- `release.sh`: when `VERSION` is already published (local tag, GitHub tag or
+  existing release), the error message now says what to do —
+  `./build-deb.sh --patch --yes` then `./build-rpm.sh --no-version-change --yes`
+  (or `--minor` / `--major`) to move on to the next version.
+- **Release notes are published in English first, then in French**, like the
+  README (English by default). They come from today's entry in `CHANGELOG.md`
+  (English) and in `CHANGELOG.fr.md` (French): `release.sh` stops before
+  changing anything if either is missing.
+- **Bilingual documentation**: `ARCHITECTURE`, `CONTRIBUTING`,
+  `PROJECT_CONTEXT` and `CHANGELOG` now exist in English (`X.md`, shown by
+  default on GitHub) and in French (`X.fr.md`), with a link to switch
+  language at the top of each file. The `.deb` and `.rpm` packages ship both
+  versions.
 
 ## 2026-10-29 — v1.3.2
 
-### Ajouté
+### Added
 
-- **Test du paquet `.rpm` dans un vrai Fedora** (`tests/fedora/test-fedora.sh`) :
-  lance un conteneur Fedora (podman ou docker), y installe le `.rpm` avec `dnf`,
-  vérifie son contenu, le moteur, GTK 4 et l'extension Nautilus (vraies liaisons
-  `nautilus-python`), fait tourner l'interface complète sous Xvfb dans les
-  quatre langues, puis désinstalle. Si GTK 4 est inutilisable, il identifie le
-  paquet manquant. À lancer avant de publier une release (voir
-  `CONTRIBUTING.md`).
-- Test du script d'installation (`tests/test_postinst.py`) : faux Nautilus,
-  langues gérées et non gérées, ordre de priorité des variables, comparaison
-  avec le choix réel de `gettext`.
+- **Test of the `.rpm` package in a real Fedora**
+  (`tests/fedora/test-fedora.sh`): starts a Fedora container (podman or
+  docker), installs the `.rpm` with `dnf`, checks its contents, the engine,
+  GTK 4 and the Nautilus extension (real `nautilus-python` bindings), runs the
+  full interface under Xvfb in the four languages, then uninstalls. If GTK 4
+  is unusable, it identifies the missing package. To be run before publishing
+  a release (see `CONTRIBUTING.md`).
+- Test of the install script (`tests/test_postinst.py`): fake Nautilus,
+  supported and unsupported languages, variable priority order, comparison
+  with the language `gettext` really picks.
 
-### Modifié
+### Changed
 
-- **Message d'installation dans la langue du système.** Quand l'installation du
-  paquet redémarre Nautilus, le message s'affiche en anglais, français,
-  espagnol ou allemand selon la langue de la session (mêmes règles que
-  l'entrée de menu : `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`), avec repli
-  sur l'anglais pour toute autre langue. Il était auparavant uniquement en
-  français. Les traductions espagnole et allemande n'ont pas été relues par des
-  locuteurs natifs.
+- **Install message in the system language.** When installing the package
+  restarts Nautilus, the message is displayed in English, French, Spanish or
+  German depending on the session language (same rules as the menu entry:
+  `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`), falling back to English for
+  any other language. It used to be French only. The Spanish and German
+  translations have not been reviewed by native speakers.
 
 ## 2026-10-28 — v1.3.1
 
-### Corrigé
+### Fixed
 
-- **Paquet `.rpm` : l'interface ne démarrait pas sur une Fedora minimale.**
-  GTK 4 a besoin, depuis Python, du fichier d'introspection de `cairo`
-  (`cairo-1.0.typelib`), fourni par `gobject-introspection` ; ni `gtk4` ni
-  `python3-gobject` ne l'installent. Le menu apparaissait mais un clic ne
-  lançait rien. `gobject-introspection` est maintenant déclaré comme
-  dépendance, et `release.sh` refuse de publier un `.rpm` qui ne le déclare
-  pas. Constaté en installant le `.rpm` de la v1.3.0 dans un vrai Fedora 44
-  (conteneur) ; avec la dépendance, l'installation, l'extension Nautilus et
-  l'interface dans les quatre langues fonctionnent. Le `.deb` n'était pas
-  concerné (il dépend de `gir1.2-gtk-4.0`).
-- **Journal de l'interface : les lignes longues passent à la ligne.** Un chemin
-  ou un message d'erreur détaillé (de plusieurs centaines de caractères) était
-  coupé au bord de la fenêtre et obligeait à faire défiler horizontalement ;
-  il est maintenant coupé aux espaces, ou au caractère pour un chemin sans
-  espace. Nouveau test `tests/test_gui_log.py`, qui mesure la mise en page dans
-  la vraie interface (sous Xvfb).
+- **`.rpm` package: the interface did not start on a minimal Fedora.** From
+  Python, GTK 4 needs the introspection file of `cairo`
+  (`cairo-1.0.typelib`), provided by `gobject-introspection`; neither `gtk4`
+  nor `python3-gobject` installs it. The menu appeared but a click launched
+  nothing. `gobject-introspection` is now declared as a dependency, and
+  `release.sh` refuses to publish a `.rpm` that does not declare it. Found by
+  installing the v1.3.0 `.rpm` in a real Fedora 44 (container); with the
+  dependency, the installation, the Nautilus extension and the interface in
+  the four languages work. The `.deb` was not affected (it depends on
+  `gir1.2-gtk-4.0`).
+- **Interface log: long lines now wrap.** A path or a detailed error message
+  (several hundred characters long) was cut off at the window edge and forced
+  horizontal scrolling; it is now broken at spaces, or at the character for a
+  path without spaces. New test `tests/test_gui_log.py`, which measures the
+  layout in the real interface (under Xvfb).
 
-### Modifié
+### Changed
 
-- **Le README affiché par défaut sur GitHub est maintenant en anglais** :
-  `README.md` est la version anglaise et la version française devient
-  `README.fr.md` (`README.en.md` disparaît). Les deux sont embarqués dans les
-  paquets `.deb` et `.rpm`.
-- **Documentation Fedora / RHEL plus juste** : le `.rpm` est testé sur
-  Fedora 44 ; la famille RHEL 10 (avec EPEL 10) n'est pas testée ; RHEL, Rocky
-  et AlmaLinux 8 et 9 ne sont pas pris en charge (leur `nautilus-python`,
-  1.2.3, est trop ancien pour l'API de Nautilus 4).
+- **The README shown by default on GitHub is now in English**: `README.md` is
+  the English version and the French version becomes `README.fr.md`
+  (`README.en.md` disappears). Both are shipped in the `.deb` and `.rpm`
+  packages.
+- **More accurate Fedora / RHEL documentation**: the `.rpm` is tested on
+  Fedora 44; the RHEL 10 family (with EPEL 10) is not tested; RHEL, Rocky and
+  AlmaLinux 8 and 9 are not supported (their `nautilus-python`, 1.2.3, is too
+  old for the Nautilus 4 API).
 
 ## 2026-10-28 — v1.3.0
 
-### Ajouté
+### Added
 
-- **Interface multilingue : anglais, français, espagnol et allemand.** La
-  langue est choisie automatiquement d'après la session (`LANGUAGE`,
-  `LC_ALL`, `LC_MESSAGES`, `LANG`) et l'anglais sert de langue de repli
-  pour toute autre langue. Sont traduits : l'entrée du menu contextuel de
-  Nautilus, la fenêtre (libellés, formats, collisions, journal, boîtes de
-  dialogue), les messages d'erreur du moteur et le fichier `.desktop`.
-  Technique : gettext, domaine `nautilus-convert-images`, catalogues
-  `po/*.po` compilés en `.mo` à l'empaquetage et installés dans
-  `/usr/share/locale`. Aucune dépendance d'exécution ajoutée.
-- `po/update-po.sh` (régénère le modèle `.pot` et met à jour les
-  catalogues) et une section « Traduire l'interface » dans
-  `CONTRIBUTING.md` pour corriger une traduction ou ajouter une langue.
-- Tests Python (`tests/`) : catalogues complets, champs `{…}` identiques à
-  la source, contrat des messages moteur ↔ IHM, entrée de menu Nautilus,
-  et vraie IHM lancée sous Xvfb dans chaque langue avec le vrai moteur.
-- `README.en.md` : section « Languages » ; la mention « interface en
-  français uniquement » est supprimée.
+- **Multilingual interface: English, French, Spanish and German.** The
+  language is chosen automatically from the session (`LANGUAGE`, `LC_ALL`,
+  `LC_MESSAGES`, `LANG`) and English is the fallback for any other language.
+  Translated: the Nautilus context-menu entry, the window (labels, formats,
+  collisions, log, dialogs), the engine's error messages and the `.desktop`
+  file. Technical: gettext, domain `nautilus-convert-images`, `po/*.po`
+  catalogs compiled to `.mo` at packaging time and installed in
+  `/usr/share/locale`. No runtime dependency added.
+- `po/update-po.sh` (regenerates the `.pot` template and updates the
+  catalogs) and a "Translating the interface" section in `CONTRIBUTING.md` to
+  fix a translation or add a language.
+- Python tests (`tests/`): complete catalogs, `{…}` fields identical to the
+  source, engine ↔ GUI message contract, Nautilus menu entry, and the real
+  GUI launched under Xvfb in each language with the real engine.
+- `README.en.md`: "Languages" section; the "interface in French only"
+  remark is removed.
 
-### Modifié
+### Changed
 
-- **Les messages du moteur sont désormais en anglais** : champs `message`
-  du flux JSON (`file_done` en erreur, `fatal_error`), aide et erreurs de
-  `convert-images-engine`. L'IHM les traduit ; un message inconnu s'affiche
-  tel quel en anglais. Impact : un script qui lisait ces messages en
-  français doit être adapté (le schéma JSON ne change pas).
-- `build-deb.sh` et `build-rpm.sh` exigent `msgfmt` (paquet `gettext`) et
-  s'arrêtent, `Cargo.toml` restauré, si un catalogue est invalide.
-  `release.sh` vérifie que chaque paquet contient une traduction par
-  langue de `po/`.
+- **The engine messages are now in English**: `message` fields of the JSON
+  stream (failed `file_done`, `fatal_error`), help and errors of
+  `convert-images-engine`. The GUI translates them; an unknown message is
+  displayed as is, in English. Impact: a script that read these messages in
+  French must be adapted (the JSON schema does not change).
+- `build-deb.sh` and `build-rpm.sh` require `msgfmt` (`gettext` package) and
+  stop, with `Cargo.toml` restored, if a catalog is invalid. `release.sh`
+  checks that each package contains one translation per language in `po/`.
 
 ### Notes
 
-- Les traductions espagnole et allemande ont été rédigées avec l'aide de
-  Claude et n'ont pas été relues par des locuteurs natifs.
-- Le texte d'erreur renvoyé par `rawloader` ou LibRaw reste en anglais
-  (bibliothèques tierces).
+- The Spanish and German translations were written with Claude's help and
+  have not been reviewed by native speakers.
+- The error text returned by `rawloader` or LibRaw stays in English
+  (third-party libraries).
 
 ## 2026-10-27 — v1.2.0
 
-### Ajouté
+### Added
 
-- **Repli LibRaw** pour les fichiers RAW que `rawloader` ne sait pas lire,
-  typiquement un boîtier absent de sa base (cas rencontré avec les `.arw`
-  du Sony DSC-RX100M6, refusés jusque-là). Ordre : `rawloader`/`imagepipe`
-  d'abord, LibRaw ensuite, et si les deux échouent l'erreur est affichée
-  pour ce fichier et le lot continue.
-- LibRaw 0.21.3 est embarquée et compilée statiquement
-  (`vendor/libraw-sys`) : aucune bibliothèque à installer, aucune
-  dépendance ajoutée aux paquets `.deb`/`.rpm`. Seul `g++` est requis à la
-  compilation (la première compilation est plus longue).
-- Tests unitaires du décodage (`cargo test`) avec un DNG synthétique
-  généré à la volée.
+- **LibRaw fallback** for the RAW files that `rawloader` cannot read,
+  typically a camera missing from its database (the case met with the `.arw`
+  files of the Sony DSC-RX100M6, rejected until then). Order:
+  `rawloader`/`imagepipe` first, LibRaw next, and if both fail the error is
+  displayed for that file and the batch continues.
+- LibRaw 0.21.3 is bundled and statically compiled (`vendor/libraw-sys`): no
+  library to install, no dependency added to the `.deb`/`.rpm` packages. Only
+  `g++` is required at build time (the first build takes longer).
+- Unit tests for decoding (`cargo test`) with a synthetic DNG generated on
+  the fly.
 
-### Corrigé
+### Fixed
 
-- Un RAW refusé affichait le message générique d'`imagepipe` (« Don't know
-  how to decode image ») qui masquait la vraie cause ; l'erreur exacte de
-  `rawloader` est maintenant remontée.
-- Une panique interne d'un décodeur sur un fichier corrompu arrêtait tout
-  le moteur ; elle est maintenant convertie en erreur pour ce seul fichier.
+- A rejected RAW displayed `imagepipe`'s generic message ("Don't know how to
+  decode image"), which hid the real cause; `rawloader`'s exact error is now
+  reported.
+- An internal panic of a decoder on a corrupt file stopped the whole engine;
+  it is now converted into an error for that file only.
 
-### Changé
+### Changed
 
-- Documentation : le choix « pas de `libraw` » est remplacé par « LibRaw
-  embarquée en secours » (voir `ARCHITECTURE.md`, « Philosophie des
-  dépendances »), et l'état de la prise en charge RAW est précisé.
+- Documentation: the "no `libraw`" choice is replaced by "bundled LibRaw as a
+  fallback" (see `ARCHITECTURE.md`, "Dependency philosophy"), and the state of
+  RAW support is clarified.
 
 ## 2026-10-27 — v1.1.1
 
-Version de maintenance : aucun changement fonctionnel (le moteur,
-l'extension Nautilus et l'IHM sont identiques à la version précédente).
+Maintenance release: no functional change (the engine, the Nautilus
+extension and the GUI are identical to the previous version).
 
-### Ajouté
+### Added
 
-- `release.sh` : publication de la release GitHub (contrôles préalables,
-  reconstruction des paquets si nécessaire, commit et push, création de la
-  release avec les deux paquets et leurs fichiers `.sha256`).
+- `release.sh`: publication of the GitHub release (preliminary checks,
+  rebuilding the packages if needed, commit and push, creation of the release
+  with both packages and their `.sha256` files).
 
-### Changé
+### Changed
 
-- `README.md` : présentation orientée usage (pourquoi l'utiliser, cas
-  d'usage, formats pris en charge), installation par paquets `.deb`/`.rpm`
-  et vérification des téléchargements ; retrait des passages obsolètes
-  (livraison par archive, `VERSION` « absent »).
-- Publication : chaque paquet est publié avec son propre fichier `.sha256`
-  (il n'y a plus de `SHA256SUMS` global).
+- `README.md`: usage-oriented presentation (why use it, use cases, supported
+  formats), installation through `.deb`/`.rpm` packages and verification of
+  the downloads; removal of obsolete passages (delivery by archive, `VERSION`
+  "absent").
+- Publication: each package is published with its own `.sha256` file (there
+  is no global `SHA256SUMS` any more).
 
 ## 2026-10-26
 
-Première release stable publiée sur GitHub (tag `v1.1.0`, paquets `.deb` et `.rpm`).
+First stable release published on GitHub (tag `v1.1.0`, `.deb` and `.rpm`
+packages).
 
 ## 2026-09-15
 
-Première version.
+First version.
 
-### Ajouté
+### Added
 
-- Moteur de conversion (`convert-images-engine`, Rust) : détection de
-  format (JPEG, PNG, TIFF, BMP, GIF, WebP et formats RAW — CR2, CR3, NEF,
-  ARW, DNG, ORF, RAF, RW2, PEF, SRW, X3F, etc. — voir `ARCHITECTURE.md`
-  pour la liste complète et la stratégie de détection), conversion sans
-  perte vers PNG/TIFF/BMP/WebP et vers JPEG à qualité réglable (100 par
-  défaut), toujours à pleine résolution et sans recadrage.
-- Extension Nautilus (`convert_images_nautilus.py`, nautilus-python) :
-  entrée de menu contextuel sur une sélection de fichiers/dossiers et sur
-  le fond d'un dossier.
-- Interface graphique GTK4 autonome (`convert-images-gui`) : détection en
-  temps réel, choix du format de destination, qualité JPEG, dossier de
-  destination (avec création de nouveau dossier), politique de collision
-  de noms, progression et journal de conversion.
-- Empaquetage `.deb` et `.rpm` via `fpm` (`build-deb.sh` / `build-rpm.sh`),
-  sur le même modèle que `linuxdoctor` : versionnage interactif ou par
-  flag, `VERSION`/`Cargo.toml` mis à jour uniquement après un build
-  complet réussi, staging dans un dossier temporaire avec permissions
-  normalisées.
-- Documentation complète : `README.md`, `PROJECT_CONTEXT.md` (vision et
-  principes), `ARCHITECTURE.md` (contrat technique canonique),
+- Conversion engine (`convert-images-engine`, Rust): format detection (JPEG,
+  PNG, TIFF, BMP, GIF, WebP and RAW formats — CR2, CR3, NEF, ARW, DNG, ORF,
+  RAF, RW2, PEF, SRW, X3F, etc. — see `ARCHITECTURE.md` for the full list and
+  the detection strategy), lossless conversion to PNG/TIFF/BMP/WebP and to
+  JPEG with adjustable quality (100 by default), always at full resolution
+  and without cropping.
+- Nautilus extension (`convert_images_nautilus.py`, nautilus-python):
+  context-menu entry on a selection of files/folders and on a folder's
+  background.
+- Standalone GTK4 graphical interface (`convert-images-gui`): real-time
+  detection, choice of destination format, JPEG quality, destination folder
+  (with creation of a new folder), file-name collision policy, progress and
+  conversion log.
+- `.deb` and `.rpm` packaging through `fpm` (`build-deb.sh` /
+  `build-rpm.sh`), on the same model as `linuxdoctor`: interactive or
+  flag-driven versioning, `VERSION`/`Cargo.toml` updated only after a
+  complete successful build, staging in a temporary folder with normalized
+  permissions.
+- Complete documentation: `README.md`, `PROJECT_CONTEXT.md` (vision and
+  principles), `ARCHITECTURE.md` (canonical technical contract),
   `CONTRIBUTING.md`.
-- Bouton « Quitter » dans l'IHM, toujours visible (y compris pendant la
-  détection, avant que le reste des options n'apparaisse). Intercepte
-  aussi la fermeture par la croix de la fenêtre (`close-request`) pour
-  appliquer la même règle. Si une conversion est en cours au moment de
-  quitter, une boîte de dialogue (`Gtk.AlertDialog`) avertit que les
-  fichiers déjà convertis resteront sur le disque mais que les suivants
-  ne seront pas traités, avec un choix explicite « Annuler » (par
-  défaut) / « Quitter quand même » ; sans conversion en cours, la
-  fermeture est immédiate, sans dialogue.
+- "Quit" button in the GUI, always visible (including during detection,
+  before the rest of the options appear). It also intercepts closing through
+  the window's cross (`close-request`) to apply the same rule. If a
+  conversion is running when quitting, a dialog (`Gtk.AlertDialog`) warns
+  that the files already converted will stay on disk but the following ones
+  will not be processed, with an explicit choice "Cancel" (default) / "Quit
+  anyway"; with no conversion running, closing is immediate, with no dialog.
 
-### Changé
+### Changed
 
-- Format de destination sélectionné par défaut dans l'IHM : JPEG au lieu
-  de PNG (demande explicite ; PNG reste évidemment disponible dans le
-  menu déroulant).
+- Destination format selected by default in the GUI: JPEG instead of PNG
+  (explicit request; PNG is of course still available in the drop-down
+  menu).
 
-### Corrigé
+### Fixed
 
-- Bug signalé : l'entrée de menu n'apparaissait pas du tout dans Nautilus.
-  Cause identifiée et confirmée par reproduction (`nautilus` lancé depuis
-  un terminal affichait la trace) : `convert_images_nautilus.py` figeait
-  `gi.require_version("Nautilus", "4.0")`, alors que sur la machine de
-  l'utilisateur (une version de Nautilus plus récente que celle du bac à
-  sable de développement) seul le typelib `Nautilus-4.1` est installé —
-  `4.0` n'existe simplement pas sur ce système. Le même figeage aurait de
-  toute façon posé problème même si `4.0` avait existé : au moment où le
-  fichier s'exécute, le processus Nautilus hôte a déjà chargé son propre
-  typelib (`gi.require_version` ne peut plus changer une version déjà
-  chargée pour le processus), donc toute version figée ici autre que
-  celle réellement en cours aurait échoué avec « already loaded with
-  version X ». Corrigé en retirant complètement le figeage de version
-  pour `Nautilus` (celui de `GObject`, lui, ne pose aucun risque : une
-  seule version d'introspection existe pour ce namespace). Vérifié que
-  l'extension se charge sans erreur à la fois quand `Nautilus` n'est pas
-  encore chargé du tout et quand il l'est déjà à une version donnée.
+- Reported bug: the menu entry did not appear at all in Nautilus. Cause
+  identified and confirmed by reproduction (`nautilus` launched from a
+  terminal displayed the trace): `convert_images_nautilus.py` pinned
+  `gi.require_version("Nautilus", "4.0")`, whereas on the user's machine (a
+  more recent Nautilus than the one in the development sandbox) only the
+  `Nautilus-4.1` typelib is installed — `4.0` simply does not exist on that
+  system. The same pinning would have been a problem anyway even if `4.0` had
+  existed: when the file runs, the host Nautilus process has already loaded
+  its own typelib (`gi.require_version` can no longer change a version
+  already loaded for the process), so any version pinned here other than the
+  one actually running would have failed with "already loaded with version
+  X". Fixed by removing the version pinning entirely for `Nautilus` (the
+  `GObject` one poses no risk: only one introspection version exists for that
+  namespace). Verified that the extension loads without error both when
+  `Nautilus` is not loaded yet and when it is already loaded at a given
+  version.
 
-### Choix techniques notables
+### Notable technical choices
 
-- Décodage RAW en Rust pur (`rawloader` + `imagepipe`), sans dépendance à
-  `libraw` — contrairement à `raw-thumbs` — pour simplifier
-  l'empaquetage : aucune bibliothèque C système à lier.
-- Binaires installés sous `/usr` (jamais `/usr/local`), leçon directement
-  reprise de `raw-thumbs` : le bac à sable bwrap de Nautilus ne monte pas
-  `/usr/local`, ce qui rendrait l'extension invisible.
-- Certaines versions de crates Rust sont figées dans `Cargo.toml`
-  (`clap`, `image`, `imagepipe`, `blake3`, `rayon`, `half`, `exr`, `uuid`,
-  `lebe`, `rayon-core`) pour rester compatibles avec un toolchain Rust
-  1.75 — voir la section « Toolchain » du `README.md`, même situation que
-  documentée dans le changelog de `linuxdoctor` pour `clap` et
-  `unicode-segmentation`.
+- RAW decoding in pure Rust (`rawloader` + `imagepipe`), with no dependency
+  on `libraw` — unlike `raw-thumbs` — to simplify packaging: no system C
+  library to link against.
+- Binaries installed under `/usr` (never `/usr/local`), a lesson taken
+  directly from `raw-thumbs`: Nautilus's bwrap sandbox does not mount
+  `/usr/local`, which would make the extension invisible.
+- Some Rust crate versions are pinned in `Cargo.toml` (`clap`, `image`,
+  `imagepipe`, `blake3`, `rayon`, `half`, `exr`, `uuid`, `lebe`,
+  `rayon-core`) to stay compatible with a Rust 1.75 toolchain — see the
+  "Toolchain note" section of `README.md`, the same situation as documented in
+  `linuxdoctor`'s changelog for `clap` and `unicode-segmentation`.

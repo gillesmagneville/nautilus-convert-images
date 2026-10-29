@@ -17,7 +17,9 @@ that's all.
 > **Note:** the user interface is available in **English, French, Spanish
 > and German** (see [Languages](#languages)). The other documents
 > (`PROJECT_CONTEXT.md` for the vision and principles, `ARCHITECTURE.md`
-> for the technical contract, `CHANGELOG.md`) are in French.
+> for the technical contract, `CONTRIBUTING.md`, `CHANGELOG.md`) exist in
+> **English and French**: each one has a link to switch language at the top,
+> and the French files end in `.fr.md`.
 
 ## Why use it?
 
@@ -100,8 +102,8 @@ After changing the session language, restart Nautilus (`nautilus -q`) so
 that the menu entry follows.
 
 * The Spanish and German translations have not yet been reviewed by native
-  speakers: corrections are welcome (see `CONTRIBUTING.md`, in French, which
-  also explains how to add a language).
+  speakers: corrections are welcome (see `CONTRIBUTING.md`, which also
+  explains how to add a language).
 * Error messages produced by the engine itself are translated; text coming
   back from third-party libraries (for example the detail of a `rawloader`
   or LibRaw error) stays in English.
@@ -241,7 +243,9 @@ rebuilding the packages if needed, commit and push of `main`, then creation
 of the release with both packages and one `.sha256` file per package. It
 requires an authenticated [`gh`](https://cli.github.com/). If `VERSION` is
 already published, it stops and tells you which build commands to run first
-to move on to the next version.
+to move on to the next version. The release notes are published in English
+first (like this README), then in French; they come from today's entry in
+`CHANGELOG.md` (English) and in `CHANGELOG.fr.md` (French), both required.
 
 ```bash
 ./release.sh --dry-run   # preview, nothing is modified or published
@@ -252,8 +256,8 @@ to move on to the next version.
 
 The engine (`convert-images-engine`) depends on no external library beyond
 what `cargo build` links statically — in particular there is no LibRaw
-library to install: it is statically embedded (see "Philosophie des
-dépendances" in `ARCHITECTURE.md`, in French). The GUI and the extension need, at run time:
+library to install: it is statically embedded (see "Dependency philosophy"
+in `ARCHITECTURE.md`). The GUI and the extension need, at run time:
 `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (Debian/Ubuntu package
 names; `python3-gobject`, `gtk4`, `gobject-introspection`, `nautilus-python`
 on Fedora) — already
@@ -332,8 +336,8 @@ this is not a limit of the project, only of the test toolchain.
 nautilus-convert-images/
 ├── .gitignore
 ├── VERSION                  # current version (= tag of the latest release)
-├── CHANGELOG.md              # Keep a Changelog format (in French)
-├── CONTRIBUTING.md            # reporting a bug, adding a format, code style
+├── CHANGELOG.md              # Keep a Changelog format (+ CHANGELOG.fr.md)
+├── CONTRIBUTING.md            # reporting a bug, adding a format, code style (+ CONTRIBUTING.fr.md)
 ├── build-deb.sh                 # .deb packaging (fpm)
 ├── build-rpm.sh                   # .rpm packaging (fpm)
 ├── release.sh                       # GitHub release publishing
@@ -341,8 +345,8 @@ nautilus-convert-images/
 ├── Cargo.lock
 ├── README.md                  # English version (shown by default on GitHub; this file)
 ├── README.fr.md                 # French version
-├── PROJECT_CONTEXT.md
-├── ARCHITECTURE.md
+├── PROJECT_CONTEXT.md           # (+ PROJECT_CONTEXT.fr.md)
+├── ARCHITECTURE.md              # (+ ARCHITECTURE.fr.md)
 │
 ├── src/                       # convert-images-engine (Rust)
 │   ├── main.rs                 # CLI entry point, streamed JSON output

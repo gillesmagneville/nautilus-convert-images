@@ -2,244 +2,241 @@
 
 # PROJECT_CONTEXT.md
 
+🇫🇷 [Version française](PROJECT_CONTEXT.fr.md)
+
 # nautilus-convert-images
 
-**nautilus-convert-images** est une extension open-source pour Nautilus (GNOME
-Fichiers) qui convertit des images — y compris les fichiers RAW d'appareil
-photo — entre formats courants, directement depuis le menu contextuel.
+**nautilus-convert-images** is an open-source extension for Nautilus (GNOME
+Files) that converts images — including camera RAW files — between common
+formats, straight from the context menu.
 
-Son objectif est de rendre la conversion d'images aussi simple qu'un clic
-droit, sans jamais sacrifier la qualité de l'image ni obliger l'utilisateur à
-ouvrir un terminal ou un logiciel de retouche.
+Its goal is to make image conversion as simple as a right-click, without ever
+sacrificing image quality or forcing the user to open a terminal or an image
+editor.
 
-nautilus-convert-images s'adresse à :
+nautilus-convert-images is aimed at:
 
-* les photographes amateurs et semi-professionnels
-* les utilisateurs de bureau Linux/GNOME en général
-* les personnes qui reçoivent des fichiers RAW ou TIFF et ont juste besoin
-  d'un JPEG (ou l'inverse) sans rien connaître à la photo
-* les administrateurs qui préparent des postes de travail
+* amateur and semi-professional photographers
+* Linux/GNOME desktop users in general
+* people who receive RAW or TIFF files and just need a JPEG (or the other
+  way round) without knowing anything about photography
+* administrators who prepare workstations
 
-Il est conçu pour fonctionner **entièrement en local**, sans compte, sans
-service en ligne, sans télémétrie.
+It is designed to work **entirely locally**: no account, no online service,
+no telemetry.
 
-> **Note sur ce document :** PROJECT_CONTEXT.md définit *pourquoi* le projet
-> existe et *ce qu'il valorise*. Il ne redéfinit pas les formats de données
-> exacts (schéma JSON du moteur, énumérations, contrat du CLI) — ceux-ci
-> vivent une seule fois, de façon canonique, dans `ARCHITECTURE.md`, pour que
-> les deux documents ne puissent pas silencieusement diverger.
+> **Note on this document:** PROJECT_CONTEXT.md defines *why* the project
+> exists and *what it values*. It does not redefine the exact data formats
+> (the engine's JSON schema, enumerations, the CLI contract) — those live
+> once, canonically, in `ARCHITECTURE.md`, so that the two documents cannot
+> silently drift apart.
 
 ---
 
 # Vision
 
-La plupart des outils de conversion d'image sur Linux demandent soit une
-ligne de commande (`convert`, `dcraw`, `exiftool`...), soit un logiciel de
-retouche complet (darktable, GIMP) pour une tâche qui devrait être triviale.
+Most image conversion tools on Linux require either a command line
+(`convert`, `dcraw`, `exiftool`...) or a full editing application (darktable,
+GIMP) for a task that should be trivial.
 
-nautilus-convert-images vise à répondre à une question simple :
+nautilus-convert-images aims to answer one simple question:
 
-> **« J'ai sélectionné des photos dans mon gestionnaire de fichiers, je veux
-> les avoir dans un autre format, sans rien perdre — comment ? »**
+> **"I selected some photos in my file manager, I want them in another
+> format, without losing anything — how?"**
 
-Plutôt que de remplacer les outils de traitement RAW avancés comme
-darktable, RawTherapee ou GIMP, nautilus-convert-images s'occupe uniquement
-de la conversion de format brute, sans retouche, exactement comme le ferait
-l'appareil photo lui-même en exportant un JPEG depuis son propre écran.
-
----
-
-# Philosophie du projet
-
-nautilus-convert-images suit cinq principes.
-
-## 1. Ne jamais perdre plus que le format ne l'impose
-
-PNG, TIFF, BMP et WebP (mode sans perte) sont réencodés sans aucune perte
-d'information — vérifié pixel à pixel. JPEG reste par nature un format avec
-perte : ce n'est pas contournable, et l'outil ne prétend jamais le
-contraire. La qualité par défaut (100) minimise cette perte autant que le
-format le permet.
-
-## 2. Ne jamais recadrer, ne jamais redimensionner
-
-Aucune étape du pipeline ne rogne ni ne réduit la résolution d'une image, à
-moins que l'utilisateur ne le demande explicitement — ce qu'aucune version
-actuelle de l'outil ne propose. Une image RAW est décodée à la résolution
-exacte de la zone active du capteur, identique à ce que produirait
-l'appareil photo.
-
-## 3. Lecture seule sur les fichiers source
-
-nautilus-convert-images ne modifie et ne supprime jamais le fichier
-d'origine. Il :
-
-* lit
-* convertit
-* écrit un nouveau fichier ailleurs (ou sous un nouveau nom)
-
-Il ne modifie jamais un fichier en place.
-
-## 4. S'intégrer au flux de travail existant, pas en créer un nouveau
-
-Pas de nouvelle application à apprendre : le point d'entrée est le menu
-contextuel de Nautilus que l'utilisateur connaît déjà. L'interface
-graphique ne s'ouvre qu'à la demande, pour cette seule tâche.
-
-## 5. Rapide
-
-Le décodage et l'encodage utilisent du code natif (Rust, avec LibRaw en C++
-en secours pour les RAW) et exploitent tous
-les cœurs disponibles pour les conversions par lot. Aucune conversion ne
-doit sembler plus lente que d'ouvrir l'image dans une visionneuse.
+Rather than replacing advanced RAW processing tools such as darktable,
+RawTherapee or GIMP, nautilus-convert-images only takes care of raw format
+conversion, with no editing, exactly as the camera itself would when
+exporting a JPEG from its own screen.
 
 ---
 
-# Périmètre du projet
+# Project philosophy
 
-nautilus-convert-images se concentre sur :
+nautilus-convert-images follows five principles.
 
-* la détection de format d'image (standard et RAW)
-* la conversion de format, sans retouche
-* l'intégration au menu contextuel de Nautilus
-* la gestion du dossier de destination (y compris la création d'un nouveau
-  dossier) et des collisions de noms
+## 1. Never lose more than the format requires
 
-nautilus-convert-images n'est **pas** :
+PNG, TIFF, BMP and WebP (lossless mode) are re-encoded with no loss of
+information whatsoever — verified pixel by pixel. JPEG remains by nature a
+lossy format: that cannot be worked around, and the tool never claims
+otherwise. The default quality (100) minimizes that loss as much as the
+format allows.
 
-* un éditeur RAW (pas de réglage d'exposition, de balance des blancs
-  manuelle, de courbes, de recadrage)
-* un remplaçant de darktable, RawTherapee ou GIMP
-* un outil de renommage ou d'organisation de photothèque
-* un service de conversion en ligne ou un démon en arrière-plan
+## 2. Never crop, never resize
+
+No step of the pipeline crops or reduces the resolution of an image, unless
+the user explicitly asks for it — which no current version of the tool
+offers. A RAW image is decoded at the exact resolution of the sensor's active
+area, identical to what the camera itself would produce.
+
+## 3. Read-only on source files
+
+nautilus-convert-images never modifies or deletes the original file. It:
+
+* reads
+* converts
+* writes a new file elsewhere (or under a new name)
+
+It never modifies a file in place.
+
+## 4. Fit into the existing workflow, don't create a new one
+
+No new application to learn: the entry point is the Nautilus context menu
+the user already knows. The graphical interface only opens on demand, for
+this one task.
+
+## 5. Fast
+
+Decoding and encoding use native code (Rust, with C++ LibRaw as a fallback
+for RAW files) and take advantage of every available core for batch
+conversions. No conversion should feel slower than opening the image in a
+viewer.
 
 ---
 
-# Plateformes cibles
+# Project scope
 
-Cible principale : bureau Linux avec Nautilus (GNOME Fichiers) 4.x / GTK4.
+nautilus-convert-images focuses on:
 
-Distributions visées :
+* image format detection (standard and RAW)
+* format conversion, without editing
+* integration into the Nautilus context menu
+* management of the destination folder (including creating a new folder) and
+  of file-name collisions
+
+nautilus-convert-images is **not**:
+
+* a RAW editor (no exposure adjustment, manual white balance, curves or
+  cropping)
+* a replacement for darktable, RawTherapee or GIMP
+* a tool for renaming or organizing a photo library
+* an online conversion service or a background daemon
+
+---
+
+# Target platforms
+
+Main target: Linux desktop with Nautilus (GNOME Files) 4.x / GTK4.
+
+Targeted distributions:
 
 * Debian
 * Ubuntu
 * Fedora
 * openSUSE
-* toute distribution basée sur GNOME avec `nautilus-python` disponible
+* any GNOME-based distribution with `nautilus-python` available
 
-Architecture : x86_64 en priorité ; ARM64 dans la mesure où les dépendances
-Rust utilisées s'y compilent sans adaptation particulière. LibRaw (C++,
-embarquée dans `vendor/` et compilée avec `g++`, utilisée en secours) devrait
-aussi s'y compiler, mais cela n'a pas été vérifié.
+Architecture: x86_64 first; ARM64 to the extent that the Rust dependencies
+used compile there without special adaptation. LibRaw (C++, bundled in
+`vendor/` and compiled with `g++`, used as a fallback) should compile there
+too, but this has not been verified.
 
 ---
 
-# Expérience utilisateur
+# User experience
 
-Utiliser nautilus-convert-images doit rester simple :
+Using nautilus-convert-images must stay simple:
 
-1. Sélectionner des fichiers et/ou dossiers dans Nautilus.
-2. Clic droit → **Convertir les images…** (« Convert images… » en anglais,
-   « Convertir imágenes… » en espagnol, « Bilder konvertieren … » en allemand :
-   la langue suit celle de la session)
-3. Choisir le format de destination et le dossier de sortie.
-4. Convertir.
+1. Select files and/or folders in Nautilus.
+2. Right-click → **Convert images…** ("Convertir les images…" in French,
+   "Convertir imágenes…" in Spanish, "Bilder konvertieren …" in German: the
+   language follows the session's)
+3. Choose the destination format and the output folder.
+4. Convert.
 
-Aucune étape de configuration préalable, aucun compte, aucune connexion
-réseau requise.
+No prior configuration step, no account, no network connection required.
 
 ---
 
 # Formats
 
-**Formats source détectés** : JPEG, PNG, TIFF, BMP, GIF, WebP, et une large
-gamme de formats RAW d'appareil photo (Canon, Nikon, Sony, Adobe DNG,
-Olympus, Fujifilm, Panasonic, Pentax, Samsung, Sigma, Hasselblad, Leica,
-GoPro...). La liste exacte des formats de destination et leurs garanties
-(sans perte ou non) sont définies une seule fois dans `ARCHITECTURE.md`.
+**Detected source formats**: JPEG, PNG, TIFF, BMP, GIF, WebP, and a wide
+range of camera RAW formats (Canon, Nikon, Sony, Adobe DNG, Olympus,
+Fujifilm, Panasonic, Pentax, Samsung, Sigma, Hasselblad, Leica, GoPro...).
+The exact list of destination formats and their guarantees (lossless or not)
+is defined once, in `ARCHITECTURE.md`.
 
 ---
 
-# Fiabilité et transparence
+# Reliability and transparency
 
-nautilus-convert-images ne prétend jamais qu'une conversion est sans perte
-quand elle ne l'est pas (cas du JPEG). Quand une limite existe, elle est
-documentée et affichée, pas cachée.
-
----
-
-# Extensibilité
-
-Ajouter un nouveau format de destination ou source ne doit toucher qu'un
-petit nombre de points bien identifiés du moteur, sans affecter l'extension
-Nautilus ni l'interface graphique. Le contrat exact (où ajouter quoi) est
-défini dans `ARCHITECTURE.md`.
+nautilus-convert-images never claims that a conversion is lossless when it is
+not (the case of JPEG). When a limit exists, it is documented and displayed,
+not hidden.
 
 ---
 
-# Objectifs de performance
+# Extensibility
 
-* Détection : quasi instantanée, même sur plusieurs milliers de fichiers
-* Conversion : parallélisée sur tous les cœurs disponibles
-* Aucun processus résident en arrière-plan une fois la conversion terminée
-* Aucune télémétrie, aucune dépendance à un service en ligne
-
----
-
-# Principes de code
-
-* Rust stable uniquement — pas de fonctionnalités nightly
-* Rust sûr (`unsafe` évité) pour le moteur
-* Python + PyGObject pour l'intégration Nautilus et l'interface graphique,
-  qui n'ont pas besoin d'être du code natif compilé
-* Une dépendance n'est ajoutée que si elle apporte un bénéfice net clair —
-  voir « Philosophie des dépendances » dans `ARCHITECTURE.md`
+Adding a new destination or source format must only touch a small number of
+well-identified points in the engine, without affecting the Nautilus
+extension or the graphical interface. The exact contract (what to add where)
+is defined in `ARCHITECTURE.md`.
 
 ---
 
-# Vision future
+# Performance goals
 
-Des versions futures pourraient inclure :
-
-* prise en charge de HEIF/AVIF en sortie
-* renommage par motif lors de la conversion par lot
-* profil de couleur explicite en sortie (au-delà du sRGB par défaut)
-* langues d'interface supplémentaires (l'interface existe déjà en anglais,
-  français, espagnol et allemand : voir `CONTRIBUTING.md`)
-
-Aucun de ces points n'est requis pour que l'outil soit utile. La v1 reste
-volontairement ciblée : détection, conversion sans perte, intégration
-Nautilus.
+* Detection: near-instant, even on several thousand files
+* Conversion: parallelized across all available cores
+* No resident background process once the conversion is finished
+* No telemetry, no dependency on an online service
 
 ---
 
-# Non-objectifs
+# Code principles
 
-nautilus-convert-images ne cherchera jamais à devenir :
-
-* un éditeur RAW complet
-* un gestionnaire de photothèque
-* un outil de traitement par lot généraliste (redimensionnement,
-  filigrane, filtres...)
-
-Il doit rester un outil de conversion de format, focalisé et prévisible.
+* Stable Rust only — no nightly features
+* Safe Rust (`unsafe` avoided) for the engine
+* Python + PyGObject for the Nautilus integration and the graphical
+  interface, which do not need to be compiled native code
+* A dependency is only added if it brings a clear net benefit — see
+  "Dependency philosophy" in `ARCHITECTURE.md`
 
 ---
 
-# Valeurs du projet
+# Future vision
 
-nautilus-convert-images valorise :
+Future versions might include:
 
-* la fidélité au fichier source
-* la clarté (dire quand un format est intrinsèquement limité, plutôt que
-  de le cacher)
-* la rapidité
-* la simplicité d'intégration (un menu contextuel, pas une nouvelle
-  application à apprendre)
-* la transparence sur le fonctionnement et les limites de l'outil
+* HEIF/AVIF output support
+* pattern-based renaming during batch conversion
+* an explicit output color profile (beyond the default sRGB)
+* additional interface languages (the interface already exists in English,
+  French, Spanish and German: see `CONTRIBUTING.md`)
 
-Avant tout :
+None of these is required for the tool to be useful. v1 deliberately stays
+focused: detection, lossless conversion, Nautilus integration.
 
-**Une conversion ne doit jamais surprendre l'utilisateur — ni par une
-perte de qualité non annoncée, ni par un recadrage, ni par une résolution
-réduite.**
+---
+
+# Non-goals
+
+nautilus-convert-images will never try to become:
+
+* a full RAW editor
+* a photo library manager
+* a general-purpose batch processing tool (resizing, watermarking,
+  filters...)
+
+It must remain a focused, predictable format conversion tool.
+
+---
+
+# Project values
+
+nautilus-convert-images values:
+
+* fidelity to the source file
+* clarity (saying when a format is inherently limited, rather than hiding
+  it)
+* speed
+* ease of integration (a context menu, not a new application to learn)
+* transparency about how the tool works and what its limits are
+
+Above all:
+
+**A conversion must never surprise the user — neither through an
+unannounced loss of quality, nor through cropping, nor through a reduced
+resolution.**

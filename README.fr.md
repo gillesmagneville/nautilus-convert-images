@@ -12,8 +12,8 @@ RAW compris, en pleine résolution, sans recadrage ni redimensionnement.**
 
 Sélectionnez des fichiers ou des dossiers entiers dans GNOME Fichiers,
 clic droit → **Convertir les images…**, choisissez le format et le dossier
-de destination : c'est tout. Voir `PROJECT_CONTEXT.md` pour la vision et
-les principes, `ARCHITECTURE.md` pour le contrat technique.
+de destination : c'est tout. Voir `PROJECT_CONTEXT.fr.md` pour la vision et
+les principes, `ARCHITECTURE.fr.md` pour le contrat technique.
 
 ## Pourquoi l'utiliser ?
 
@@ -100,7 +100,7 @@ Après un changement de langue de la session, redémarrez Nautilus
 
 * Les traductions espagnole et allemande n'ont pas encore été relues par
   des locuteurs natifs : les corrections sont les bienvenues (voir
-  `CONTRIBUTING.md`, qui explique aussi comment ajouter une langue).
+  `CONTRIBUTING.fr.md`, qui explique aussi comment ajouter une langue).
 * Les messages d'erreur que le moteur produit lui-même sont traduits ;
   le texte que renvoient des bibliothèques tierces (par exemple le détail
   d'une erreur de `rawloader` ou de LibRaw) reste en anglais.
@@ -124,7 +124,7 @@ puis par analyse du contenu, avec en dernier recours une tentative de
 décodage réel. Les RAW sont décodés à pleine résolution (zone active du
 capteur).
 
-Le moteur, l'extension et l'IHM sont découplés (voir `ARCHITECTURE.md`) :
+Le moteur, l'extension et l'IHM sont découplés (voir `ARCHITECTURE.fr.md`) :
 le moteur (`convert-images-engine`) est un exécutable CLI autonome,
 utilisable indépendamment de Nautilus ou de GTK.
 
@@ -242,7 +242,10 @@ préalables, reconstruction des paquets si nécessaire, commit et push de
 `main`, puis création de la release avec les deux paquets et un fichier
 `.sha256` par paquet. Il nécessite [`gh`](https://cli.github.com/)
 authentifié. Si `VERSION` est déjà publiée, il s'arrête et indique les
-commandes de build à lancer d'abord pour passer à la version suivante.
+commandes de build à lancer d'abord pour passer à la version suivante. Les
+notes de la release sont publiées en anglais d'abord (comme le README), puis
+en français ; elles viennent de l'entrée du jour de `CHANGELOG.md` (anglais)
+et de `CHANGELOG.fr.md` (français), toutes deux obligatoires.
 
 ```bash
 ./release.sh --dry-run   # aperçu, rien n'est modifié ni publié
@@ -254,7 +257,8 @@ commandes de build à lancer d'abord pour passer à la version suivante.
 Le moteur (`convert-images-engine`) ne dépend d'aucune bibliothèque
 externe au-delà de ce que `cargo build` lie statiquement — en particulier
 aucune bibliothèque LibRaw à installer : elle est embarquée statiquement
-(voir « Philosophie des dépendances » dans `ARCHITECTURE.md`). L'IHM et l'extension nécessitent, au moment de
+(voir « Philosophie des dépendances » dans `ARCHITECTURE.fr.md`). L'IHM et
+l'extension nécessitent, au moment de
 l'exécution : `python3-gi`, `gir1.2-gtk-4.0`, `python3-nautilus` (noms de
 paquets Debian/Ubuntu ; `python3-gobject`, `gtk4`, `gobject-introspection`,
 `nautilus-python` sur Fedora) — déjà déclarés comme dépendances par les deux scripts de
@@ -336,8 +340,8 @@ projet, seulement du toolchain de test.
 nautilus-convert-images/
 ├── .gitignore
 ├── VERSION                  # version courante (= tag de la dernière release)
-├── CHANGELOG.md              # format Keep a Changelog
-├── CONTRIBUTING.md            # signaler un bug, ajouter un format, style de code
+├── CHANGELOG.md              # format Keep a Changelog, version anglaise (+ CHANGELOG.fr.md)
+├── CONTRIBUTING.md            # signaler un bug, ajouter un format, style de code (+ CONTRIBUTING.fr.md)
 ├── build-deb.sh                 # empaquetage .deb (fpm)
 ├── build-rpm.sh                   # empaquetage .rpm (fpm)
 ├── release.sh                       # publication de la release GitHub
@@ -345,8 +349,8 @@ nautilus-convert-images/
 ├── Cargo.lock
 ├── README.md                  # version anglaise (affichée par défaut sur GitHub)
 ├── README.fr.md                 # version française (ce fichier)
-├── PROJECT_CONTEXT.md
-├── ARCHITECTURE.md
+├── PROJECT_CONTEXT.md           # version anglaise (+ PROJECT_CONTEXT.fr.md)
+├── ARCHITECTURE.md              # version anglaise (+ ARCHITECTURE.fr.md)
 │
 ├── src/                       # convert-images-engine (Rust)
 │   ├── main.rs                 # point d'entrée CLI, sortie JSON en flux

@@ -2,28 +2,30 @@
 
 # nautilus-convert-images Architecture
 
-Ce document est le contrat technique canonique de nautilus-convert-images.
-Là où `PROJECT_CONTEXT.md` décrit la vision et les principes, ce document
-définit les types, schémas et règles exacts que le code doit respecter. En
-cas de désaccord apparent entre les deux, ce document a raison pour tout ce
-qui est concret (schéma JSON, valeurs d'énumération, chemins de fichiers).
+🇫🇷 [Version française](ARCHITECTURE.fr.md)
 
-## Vue d'ensemble
+This document is the canonical technical contract of nautilus-convert-images.
+Where `PROJECT_CONTEXT.md` describes the vision and the principles, this
+document defines the exact types, schemas and rules the code must follow. If
+the two ever seem to disagree, this document is right for everything concrete
+(JSON schema, enumeration values, file paths).
 
-> **Sélection Nautilus → détection → conversion → fichiers de sortie**
+## Overview
+
+> **Nautilus selection → detection → conversion → output files**
 
 ```
         +---------------------------+
-        |  Nautilus (menu clic droit) |
+        |  Nautilus (right-click menu) |
         +--------------+--------------+
-                       |  lance en sous-processus détaché
+                       |  launches as a detached subprocess
                        v
         +---------------------------+
         |   convert-images-gui        |  Python + PyGObject (GTK4)
-        |   (interface graphique)     |
+        |   (graphical interface)     |
         +--------------+--------------+
-                       |  pilote en sous-processus,
-                       |  parse une ligne JSON par événement
+                       |  drives it as a subprocess,
+                       |  parses one JSON line per event
                        v
         +---------------------------+
         | convert-images-engine       |  Rust
@@ -31,144 +33,139 @@ qui est concret (schéma JSON, valeurs d'énumération, chemins de fichiers).
         +---------------------------+
 ```
 
-L'extension Nautilus (`convert_images_nautilus.py`) ne fait que collecter
-les chemins sélectionnés et lancer l'IHM : elle ne contient aucune logique
-de détection ni de conversion, pour ne jamais bloquer ni faire planter
-Nautilus.
+The Nautilus extension (`convert_images_nautilus.py`) only collects the
+selected paths and launches the GUI: it contains no detection or conversion
+logic, so that it can never block or crash Nautilus.
 
-Le moteur (`convert-images-engine`) ne connaît rien de Nautilus ni de
-GTK : c'est un exécutable en ligne de commande autonome, utilisable
-indépendamment de l'IHM.
+The engine (`convert-images-engine`) knows nothing about Nautilus or GTK: it
+is a standalone command-line executable that can be used independently of the
+GUI.
 
 ---
 
-# Disposition du projet
+# Project layout
 
 ```
 nautilus-convert-images/
 ├── Cargo.toml
 ├── Cargo.lock
-├── build-deb.sh                 # empaquetage .deb (fpm)
-├── build-rpm.sh                  # empaquetage .rpm (fpm)
-├── README.md                      # version anglaise (affichée par défaut sur GitHub)
-├── README.fr.md                   # version française
-├── PROJECT_CONTEXT.md
-├── ARCHITECTURE.md
-├── CONTRIBUTING.md
-├── CHANGELOG.md
+├── build-deb.sh                 # .deb packaging (fpm)
+├── build-rpm.sh                  # .rpm packaging (fpm)
+├── README.md                      # English version (shown by default on GitHub)
+├── README.fr.md                   # French version
+├── PROJECT_CONTEXT.md             # + PROJECT_CONTEXT.fr.md
+├── ARCHITECTURE.md                # + ARCHITECTURE.fr.md (this document)
+├── CONTRIBUTING.md                # + CONTRIBUTING.fr.md
+├── CHANGELOG.md                   # + CHANGELOG.fr.md
 ├── LICENSE
 │
 ├── src/                          # convert-images-engine (Rust)
-│   ├── main.rs                    # point d'entrée CLI, boucle rayon, sortie JSON
-│   ├── cli.rs                      # clap : sous-commandes, énumération récursive des fichiers
-│   ├── formats.rs                   # détection de format (standard + RAW)
-│   ├── raw.rs                        # décodage RAW (rawloader + imagepipe, repli LibRaw)
-│   ├── libraw.rs                      # décodeur de secours (LibRaw, statique)
-│   └── convert.rs                     # décodage source + encodage vers le format cible
+│   ├── main.rs                    # CLI entry point, rayon loop, JSON output
+│   ├── cli.rs                      # clap: subcommands, recursive file enumeration
+│   ├── formats.rs                   # format detection (standard + RAW)
+│   ├── raw.rs                        # RAW decoding (rawloader + imagepipe, LibRaw fallback)
+│   ├── libraw.rs                      # fallback decoder (LibRaw, static)
+│   └── convert.rs                     # source decoding + encoding to the target format
 │
 ├── nautilus-extension/
-│   ├── convert_images_nautilus.py    # extension nautilus-python (menu contextuel)
-│   └── convert-images-gui             # IHM GTK4 autonome (Python + PyGObject)
+│   ├── convert_images_nautilus.py    # nautilus-python extension (context menu)
+│   └── convert-images-gui             # standalone GTK4 GUI (Python + PyGObject)
 │
-├── vendor/libraw-sys/             # LibRaw 0.21.3 + liaisons (voir vendor/README.md)
+├── vendor/libraw-sys/             # LibRaw 0.21.3 + bindings (see vendor/README.md)
 │
-├── po/                            # traductions gettext (voir « Internationalisation »)
-│   ├── nautilus-convert-images.pot   # modèle : textes source en anglais
-│   ├── fr.po  es.po  de.po           # une traduction par langue
-│   └── update-po.sh                   # régénère le .pot et met à jour les .po
+├── po/                            # gettext translations (see "Internationalization")
+│   ├── nautilus-convert-images.pot   # template: English source strings
+│   ├── fr.po  es.po  de.po           # one translation per language
+│   └── update-po.sh                   # regenerates the .pot and updates the .po files
 │
 ├── tests/
-│   ├── test_i18n.py                 # catalogues, messages du moteur, IHM par langue
-│   ├── test_gui_log.py              # une ligne longue du journal passe à la ligne
-│   ├── test_postinst.py             # le message d'installation suit la langue du système
-│   ├── gui_smoke.py                  # lance la vraie IHM sous Xvfb et rapporte ce qu'elle affiche
-│   ├── gui_log_wrap.py               # mesure la mise en page du journal dans la vraie IHM
-│   └── fedora/                       # teste le .rpm dans un vrai Fedora (podman/docker), voir CONTRIBUTING.md
+│   ├── test_i18n.py                 # catalogs, engine messages, GUI in each language
+│   ├── test_gui_log.py              # a long log line wraps
+│   ├── test_postinst.py             # the install message follows the system language
+│   ├── gui_smoke.py                  # launches the real GUI under Xvfb and reports what it shows
+│   ├── gui_log_wrap.py               # measures the log layout in the real GUI
+│   └── fedora/                       # tests the .rpm in a real Fedora (podman/docker), see CONTRIBUTING.md
 │
 └── packaging/
-    ├── nautilus-convert-images.desktop  # lancement manuel de l'IHM hors menu contextuel
-    └── postinst                          # redémarre Nautilus après installation du paquet (message en en/fr/es/de)
+    ├── nautilus-convert-images.desktop  # manual launch of the GUI outside the context menu
+    └── postinst                          # restarts Nautilus after the package is installed (message in en/fr/es/de)
 ```
 
 ---
 
-# Le moteur (`convert-images-engine`)
+# The engine (`convert-images-engine`)
 
-## Détection de format (`formats.rs`)
+## Format detection (`formats.rs`)
 
 ```rust
 enum DetectedFormat {
     Standard(StandardFormat),  // Jpeg | Png | Tiff | Bmp | Gif | WebP
-    Raw(String),                // étiquette lisible, ex. "RAW Canon (CR2)"
+    Raw(String),                // readable label, e.g. "RAW Canon (CR2)"
     Unknown,
 }
 ```
 
-Stratégie, dans cet ordre :
+Strategy, in this order:
 
-1. **Extension connue** — table statique `standard_extension()` /
-   `raw_extension_label()`. Résout l'ambiguïté entre TIFF classique et les
-   nombreux formats RAW qui sont eux-mêmes des conteneurs TIFF au niveau
-   des octets magiques (CR2, NEF, DNG, ARW, ORF, PEF...).
-2. **Contenu (extension absente ou inconnue)** — sniffing par octets
-   magiques via `infer`, limité aux formats standards non ambigus
-   (`image/tiff` est volontairement ignoré ici, pour la même raison qu'au
-   point 1).
-3. **Dernier recours** — tentative de décodage RAW réel
-   (`rawloader::decode_file`) ; en cas de succès, l'étiquette est
-   construite à partir de `make`/`model` lus dans les métadonnées du
-   fichier lui-même.
+1. **Known extension** — static table `standard_extension()` /
+   `raw_extension_label()`. This resolves the ambiguity between plain TIFF
+   and the many RAW formats that are themselves TIFF containers at the
+   magic-byte level (CR2, NEF, DNG, ARW, ORF, PEF...).
+2. **Content (missing or unknown extension)** — magic-byte sniffing with
+   `infer`, limited to the unambiguous standard formats (`image/tiff` is
+   deliberately ignored here, for the same reason as in point 1).
+3. **Last resort** — an actual RAW decoding attempt
+   (`rawloader::decode_file`); on success, the label is built from the
+   `make`/`model` read from the file's own metadata.
 
-**Point d'extension — ajouter un nouveau format RAW par extension :**
-ajouter une entrée dans `raw_extension_label()` (`formats.rs`). Rien
-d'autre à modifier : le décodage réel dépend uniquement de la couverture
-de `rawloader`, pas de cette table, qui ne sert qu'à l'étiquetage et au
-filtrage lors du parcours de dossier (`has_known_image_extension()`).
+**Extension point — adding a new RAW format by extension:**
+add an entry to `raw_extension_label()` (`formats.rs`). Nothing else needs to
+change: the actual decoding depends only on what `rawloader` covers, not on
+this table, which is only used for labeling and for filtering during folder
+traversal (`has_known_image_extension()`).
 
-## Décodage RAW (`raw.rs`)
+## RAW decoding (`raw.rs`)
 
-Pipeline `rawloader` + `imagepipe`, toujours avec
-`maxwidth = 0, maxheight = 0` (aucun redimensionnement) et les opérations
-de recadrage du pipeline laissées à leur valeur par défaut (no-op) — voir
-`PROJECT_CONTEXT.md`, principe n°2. Deux sorties possibles :
+`rawloader` + `imagepipe` pipeline, always with
+`maxwidth = 0, maxheight = 0` (no resizing) and the pipeline's cropping
+operations left at their default value (no-op) — see `PROJECT_CONTEXT.md`,
+principle no. 2. Two possible outputs:
 
-* `decode_8bit()` → RGB 8 bits/canal (JPEG, BMP, WebP)
-* `decode_16bit()` → RGB 16 bits/canal (PNG, TIFF — pour préserver toute la
-  profondeur que le capteur peut fournir)
+* `decode_8bit()` → 8 bits/channel RGB (JPEG, BMP, WebP)
+* `decode_16bit()` → 16 bits/channel RGB (PNG, TIFF — to preserve all the
+  depth the sensor can provide)
 
-**Ordre de décodage et repli.** Pour chaque fichier RAW :
+**Decoding order and fallback.** For each RAW file:
 
-1. `rawloader` + `imagepipe` (décodeur principal) ;
-2. si cela échoue — typiquement un boîtier absent de la base de
-   `rawloader` — repli sur **LibRaw** (`libraw.rs`) ;
-3. si LibRaw échoue aussi, l'erreur des deux décodeurs est remontée
-   (« … ; repli LibRaw : … ») pour ce fichier seulement, et le lot continue.
+1. `rawloader` + `imagepipe` (main decoder);
+2. if that fails — typically a camera missing from `rawloader`'s database —
+   fall back to **LibRaw** (`libraw.rs`);
+3. if LibRaw fails too, the errors of both decoders are reported
+   ("… ; LibRaw fallback: …") for that file only, and the batch continues.
 
-Chaque décodeur est exécuté sous `catch_unwind` : une panique interne
-(fichier corrompu) devient une erreur de ce fichier au lieu d'arrêter le
-moteur. `imagepipe` masque la cause réelle d'un échec (il essaie `rawloader`,
-puis `image::open`, et renvoie « Don't know how to decode image ») : `raw.rs`
-rappelle donc `rawloader::decode_file` pour remonter son erreur exacte.
+Each decoder runs under `catch_unwind`: an internal panic (corrupt file)
+becomes an error for that file instead of stopping the engine. `imagepipe`
+hides the real cause of a failure (it tries `rawloader`, then `image::open`,
+and returns "Don't know how to decode image"): `raw.rs` therefore calls
+`rawloader::decode_file` again to report its exact error.
 
-Réglages LibRaw (`libraw.rs`) : pleine résolution (`half_size = 0`, aucun
-recadrage ni redimensionnement), balance des blancs de l'appareil
-(`use_camera_wb = 1`), sortie sRGB avec courbe sRGB (`gamm = 1/2.4, 12.92`),
-pas de luminosité automatique (`no_auto_bright = 1`), 8 ou 16 bits selon le
-format cible. Contrairement à `imagepipe`, qui applique une courbe de base
-sur la luminance (`basecurve`, point 0,50 → 0,60, « pour passer du linéaire
-à un aspect plus naturel »), LibRaw n'applique aucune courbe de tons : le
-rendu du repli est plus sombre. Ni l'un ni l'autre ne fait de correction
-d'objectif, de netteté ni de réduction de bruit.
+LibRaw settings (`libraw.rs`): full resolution (`half_size = 0`, no cropping
+or resizing), camera white balance (`use_camera_wb = 1`), sRGB output with
+the sRGB curve (`gamm = 1/2.4, 12.92`), no automatic brightness
+(`no_auto_bright = 1`), 8 or 16 bits depending on the target format. Unlike
+`imagepipe`, which applies a base curve to the luminance (`basecurve`, point
+0.50 → 0.60, "to go from linear to a more natural look"), LibRaw applies no
+tone curve: the fallback rendering is darker. Neither does lens correction,
+sharpening or noise reduction.
 
-Options facultatives de LibRaw **non compilées** (`build.rs` ne définit ni
-`USE_JPEG`, `USE_ZLIB`, `USE_X3FTOOLS`, `USE_DNGSDK` ni `USE_RAWSPEED`) : le
-repli ne lit donc pas les DNG compressés avec perte (JPEG) ni les DNG à
-virgule flottante compressés (deflate), ni les Sigma Foveon (X3F), que
-`rawloader` décode seul pour les modèles qu'il connaît. Le CR3, absent de
-`rawloader`, ne passe que par LibRaw (`crx.cpp` et `cr3_parser.cpp` sont
-compilés) ; il n'a pas été testé sur de vrais fichiers. Activer ces options
-exigerait `libjpeg`/`zlib` à la compilation : à envisager si des fichiers
-réels l'imposent.
+Optional LibRaw features that are **not compiled** (`build.rs` defines none
+of `USE_JPEG`, `USE_ZLIB`, `USE_X3FTOOLS`, `USE_DNGSDK` or `USE_RAWSPEED`):
+the fallback therefore cannot read lossy-compressed (JPEG) DNGs, deflate-
+compressed floating-point DNGs, or Sigma Foveon (X3F) files, which
+`rawloader` decodes on its own for the models it knows. CR3, absent from
+`rawloader`, only goes through LibRaw (`crx.cpp` and `cr3_parser.cpp` are
+compiled); it has not been tested on real files. Enabling these options would
+require `libjpeg`/`zlib` at build time: to consider if real files demand it.
 
 ## Conversion (`convert.rs`)
 
@@ -176,52 +173,51 @@ réels l'imposent.
 enum TargetFormat { Jpeg, Png, Tiff, Bmp, Webp }
 ```
 
-| Format cible | Sans perte ? | Profondeur | Alpha |
+| Target format | Lossless? | Bit depth | Alpha |
 |---|---|---|---|
-| PNG | Oui | 8 ou 16 bits (héritée de la source) | Conservé |
-| TIFF | Oui (non compressé) | 8 ou 16 bits (héritée de la source) | Conservé |
-| BMP | Oui | 8 bits | Conservé si présent |
-| WebP | Oui (VP8L) | 8 bits | Conservé si présent |
-| JPEG | **Non** — limite du format lui-même | 8 bits | Non supporté (aplati) |
+| PNG | Yes | 8 or 16 bits (inherited from the source) | Kept |
+| TIFF | Yes (uncompressed) | 8 or 16 bits (inherited from the source) | Kept |
+| BMP | Yes | 8 bits | Kept if present |
+| WebP | Yes (VP8L) | 8 bits | Kept if present |
+| JPEG | **No** — a limit of the format itself | 8 bits | Not supported (flattened) |
 
-Le tableau ci-dessus est la source de vérité ; `TargetFormat::is_lossless()`
-doit toujours y correspondre exactement.
+The table above is the source of truth; `TargetFormat::is_lossless()` must
+always match it exactly.
 
-**Point d'extension — ajouter un nouveau format de destination :**
+**Extension point — adding a new destination format:**
 
-1. Ajouter la variante dans `TargetFormat` (`convert.rs`) et son
-   `extension()`.
-2. Ajouter le cas d'encodage dans `encode_target()`.
-3. Ajouter la ligne correspondante dans le tableau ci-dessus **et** dans
-   la sortie de la sous-commande `formats` (`main.rs`).
-4. Côté IHM : ajouter l'entrée dans `FORMAT_CHOICES`
+1. Add the variant to `TargetFormat` (`convert.rs`) and its `extension()`.
+2. Add the encoding case to `encode_target()`.
+3. Add the matching row to the table above **and** to the output of the
+   `formats` subcommand (`main.rs`).
+4. GUI side: add the entry to `FORMAT_CHOICES`
    (`nautilus-extension/convert-images-gui`).
 
-Rien d'autre ne doit changer — ni l'extension Nautilus, ni le schéma JSON
-ci-dessous.
+Nothing else must change — neither the Nautilus extension nor the JSON schema
+below.
 
-## Interface en ligne de commande (`cli.rs` / `main.rs`)
+## Command-line interface (`cli.rs` / `main.rs`)
 
 ```
 convert-images-engine formats
-convert-images-engine detect   [--recursive] <chemins...>
+convert-images-engine detect   [--recursive] <paths...>
 convert-images-engine convert  [--recursive] --output-dir <dir> --format <jpeg|png|tiff|bmp|webp>
                                  [--quality <1-100>] [--on-collision <skip|rename|overwrite>]
-                                 [--threads <n>] <chemins...>
+                                 [--threads <n>] <paths...>
 ```
 
-Chaque ligne de sortie sur stdout est un objet JSON complet (une ligne =
-un événement), pour que l'IHM puisse lire au fil de l'eau sans attendre la
-fin du processus.
+Each line written to stdout is a complete JSON object (one line = one
+event), so that the GUI can read as it goes without waiting for the process
+to finish.
 
-### Événements de `detect`
+### `detect` events
 
 ```json
 {"event": "file", "path": "...", "format": "CR2", "is_raw": true}
 {"event": "summary", "total": 42, "counts": {"CR2": 30, "JPEG": 12}}
 ```
 
-### Événements de `convert`
+### `convert` events
 
 ```json
 {"event": "start", "total": 42}
@@ -231,158 +227,153 @@ fin du processus.
 {"event": "fatal_error", "message": "..."}
 ```
 
-Les champs `message` (événements `file_done` en erreur et `fatal_error`)
-sont des **messages techniques en anglais**, non localisés : c'est l'IHM qui
-les traduit (voir « Internationalisation »). De même, l'aide en ligne de
-commande et les messages d'erreur du moteur sont en anglais. Les libellés
-de format de l'événement `file` (`"format": "RAW Sony (ARW)"`, `"Unknown"`…)
-sont également traduits côté IHM.
+The `message` fields (failed `file_done` events and `fatal_error`) are
+**technical messages in English**, not localized: the GUI translates them
+(see "Internationalization"). Likewise, the command-line help and the
+engine's error messages are in English. The format labels of the `file`
+event (`"format": "RAW Sony (ARW)"`, `"Unknown"`…) are also translated on the
+GUI side.
 
-Ce schéma est le contrat entre le moteur et n'importe quelle IHM
-(`convert-images-gui` aujourd'hui, potentiellement autre chose demain) : il
-ne doit pas changer de forme sans mettre à jour ce document **et** le code
-qui le consomme.
+This schema is the contract between the engine and any GUI
+(`convert-images-gui` today, possibly something else tomorrow): its shape
+must not change without updating this document **and** the code that
+consumes it.
 
-### Politique de collision (`--on-collision`)
+### Collision policy (`--on-collision`)
 
-* `skip` — ignore le fichier si la destination existe déjà.
-* `rename` (défaut) — ajoute ` (1)`, ` (2)`, ... jusqu'à trouver un nom
-  libre.
-* `overwrite` — remplace le fichier existant.
+* `skip` — skip the file if the destination already exists.
+* `rename` (default) — append ` (1)`, ` (2)`, ... until a free name is
+  found.
+* `overwrite` — replace the existing file.
 
 ---
 
-# L'extension Nautilus (`convert_images_nautilus.py`)
+# The Nautilus extension (`convert_images_nautilus.py`)
 
-Implémente `Nautilus.MenuProvider` (`get_file_items` sur une sélection,
-`get_background_items` sur le fond d'un dossier). N'importe rien de lourd,
-ne fait aucune E/S autre qu'écrire la liste de chemins sélectionnés dans un
-fichier temporaire, puis lance :
+Implements `Nautilus.MenuProvider` (`get_file_items` for a selection,
+`get_background_items` for a folder's background). It imports nothing heavy
+and does no I/O other than writing the list of selected paths to a temporary
+file, then launches:
 
 ```
-convert-images-gui --input-list <fichier temporaire>
+convert-images-gui --input-list <temporary file>
 ```
 
-en sous-processus détaché (`start_new_session=True`), sans jamais attendre
-sa fin. Doit être installée sous
-`/usr/share/nautilus-python/extensions/` — jamais dans `~/.local/...` ni
-`/usr/local/...`, invisibles depuis le bac à sable bwrap de Nautilus.
-Le libellé et l'infobulle de l'entrée de menu sont traduits (même domaine
-gettext que l'IHM).
+as a detached subprocess (`start_new_session=True`), without ever waiting for
+it to finish. It must be installed under
+`/usr/share/nautilus-python/extensions/` — never in `~/.local/...` or
+`/usr/local/...`, which are invisible from Nautilus's bwrap sandbox.
+The label and tooltip of the menu entry are translated (same gettext domain
+as the GUI).
 
 ---
 
-# L'interface graphique (`convert-images-gui`)
+# The graphical interface (`convert-images-gui`)
 
-Application GTK4 autonome (n'a pas besoin de Nautilus pour fonctionner —
-elle peut être lancée manuellement avec des chemins en argument). Pilote
-`convert-images-engine` via `Gio.Subprocess` en lisant sa sortie standard
-ligne par ligne (`Gio.DataInputStream.read_line_async`), jamais en
-bloquant la boucle GTK. Chaque ligne JSON reçue met à jour l'interface
-(compteurs de détection, barre de progression, journal).
+Standalone GTK4 application (it does not need Nautilus to work — it can be
+launched manually with paths as arguments). It drives `convert-images-engine`
+through `Gio.Subprocess`, reading its standard output line by line
+(`Gio.DataInputStream.read_line_async`), never blocking the GTK main loop.
+Each JSON line received updates the interface (detection counters, progress
+bar, log).
 
 ---
 
-# Internationalisation
+# Internationalization
 
-L'interface (entrée du menu Nautilus, fenêtre, journal) est disponible en
-anglais, français, espagnol et allemand, avec [gettext](https://www.gnu.org/software/gettext/).
+The interface (Nautilus menu entry, window, log) is available in English,
+French, Spanish and German, with [gettext](https://www.gnu.org/software/gettext/).
 
-* **Textes source en anglais.** Le code contient les messages en anglais
-  (`_("Convert images")`) ; l'anglais est donc aussi la langue de repli
-  quand aucune traduction ne correspond. Un seul domaine,
-  `nautilus-convert-images`, est partagé par l'IHM et l'extension.
-* **Choix de la langue.** Automatique, par le module `gettext` de la
-  bibliothèque standard de Python : `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`,
-  puis `LANG`, avec repli de `fr_CA` sur `fr`, puis sur l'anglais
-  (`fallback=True`). Aucun `setlocale` ni dépendance supplémentaire.
-* **Catalogues.** `po/<langue>.po` (sources éditables) sont compilés en
-  `.mo` par `build-deb.sh` / `build-rpm.sh` (`msgfmt --check`, qui refuse
-  un champ `{…}` modifié) et installés dans
-  `/usr/share/locale/<langue>/LC_MESSAGES/nautilus-convert-images.mo`. Les
-  `.mo` ne sont pas versionnés. `release.sh` vérifie que chaque paquet
-  contient un `.mo` par langue de `po/`.
-* **Pluriels.** `ngettext` pour les comptes (« 1 fichier détecté » / « 2
-  fichiers détectés ») ; les règles de pluriel de chaque langue sont dans
-  l'en-tête de son `.po`.
-* **Champs nommés.** Les messages à variables utilisent `{nom}` avec
-  `str.format`, jamais `%s`, pour que le traducteur puisse réordonner les
-  mots. Les commentaires `# TRANSLATORS:` du code sont repris dans le `.pot`.
-* **Fichier `.desktop`.** Traduit directement avec des clés `Name[xx]`,
-  `GenericName[xx]`, `Comment[xx]` (hors gettext).
-* **Variables d'environnement de développement.**
-  `CONVERT_IMAGES_LOCALEDIR` (dossier de catalogues autre que
-  `/usr/share/locale`) et `CONVERT_IMAGES_ENGINE` (autre binaire du moteur)
-  servent aux tests ; elles n'ont aucun usage en exploitation normale.
+* **English source strings.** The code contains the English messages
+  (`_("Convert images")`); English is therefore also the fallback language
+  when no translation matches. A single domain, `nautilus-convert-images`, is
+  shared by the GUI and the extension.
+* **Language selection.** Automatic, through the `gettext` module of Python's
+  standard library: `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, then `LANG`, with
+  `fr_CA` falling back to `fr`, then to English (`fallback=True`). No
+  `setlocale` and no extra dependency.
+* **Catalogs.** `po/<language>.po` (editable sources) are compiled to `.mo`
+  by `build-deb.sh` / `build-rpm.sh` (`msgfmt --check`, which rejects a
+  modified `{…}` field) and installed to
+  `/usr/share/locale/<language>/LC_MESSAGES/nautilus-convert-images.mo`. The
+  `.mo` files are not versioned. `release.sh` checks that each package
+  contains one `.mo` per language in `po/`.
+* **Plurals.** `ngettext` for counts ("1 file detected" / "2 files
+  detected"); each language's plural rules are in the header of its `.po`.
+* **Named fields.** Messages with variables use `{name}` with `str.format`,
+  never `%s`, so that the translator can reorder the words. The
+  `# TRANSLATORS:` comments in the code are carried over into the `.pot`.
+* **`.desktop` file.** Translated directly with `Name[xx]`,
+  `GenericName[xx]`, `Comment[xx]` keys (outside gettext).
+* **Development environment variables.**
+  `CONVERT_IMAGES_LOCALEDIR` (a catalog folder other than
+  `/usr/share/locale`) and `CONVERT_IMAGES_ENGINE` (another engine binary)
+  are used by the tests; they have no use in normal operation.
 
-## Message d'installation (`packaging/postinst`)
+## Install message (`packaging/postinst`)
 
-Le script exécuté en root après l'installation du paquet affiche un message
-quand il redémarre Nautilus. Il n'utilise pas gettext (pas de catalogue
-disponible à ce stade, et il doit rester un `sh` POSIX minimal) : un petit
-bloc `case` contient les quatre textes. La langue est choisie par la fonction
-`pick_language`, qui reproduit les règles de gettext : première variable non
-vide parmi `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG` ; `LANGUAGE` peut
-contenir plusieurs langues séparées par « : » (la première disponible gagne) ;
-`C` et `POSIX` arrêtent la recherche ; sans correspondance, anglais.
-`tests/test_postinst.py` compare ce choix à celui de `gettext.find()` pour
-plus de trente configurations.
+The script run as root after the package is installed prints a message when
+it restarts Nautilus. It does not use gettext (no catalog is available at that
+stage, and it must remain a minimal POSIX `sh`): a small `case` block holds
+the four texts. The language is chosen by the `pick_language` function, which
+reproduces gettext's rules: first non-empty variable among `LANGUAGE`,
+`LC_ALL`, `LC_MESSAGES`, `LANG`; `LANGUAGE` may contain several languages
+separated by ":" (the first available one wins); `C` and `POSIX` stop the
+search; with no match, English. `tests/test_postinst.py` compares this choice
+with that of `gettext.find()` for more than thirty configurations.
 
-* **Pour ajouter une langue** : ajouter son motif dans `pick_language` et son
-  texte dans le `case` du message, puis un marqueur et des cas dans
+* **To add a language**: add its pattern to `pick_language` and its text to
+  the message `case`, then a marker and test cases in
   `tests/test_postinst.py`.
-* Le même bloc `pick_language` est copié dans le `postinst.sh` du dépôt
-  `raw-thumbs` : si les règles changent, changer les deux.
+* The same `pick_language` block is copied into the `postinst.sh` of the
+  `raw-thumbs` repository: if the rules change, change both.
 
-## Messages du moteur
+## Engine messages
 
-Le moteur ne connaît pas gettext : il émet des messages d'erreur techniques
-**en anglais** dans le flux JSON. L'IHM les rend dans la langue de
-l'utilisateur au moyen de `ENGINE_MESSAGE_TEMPLATES` : chaque modèle est un
-message anglais avec des champs `{nom}` (par exemple
-`"cannot open RAW file: {detail}"`), transformé en expression régulière et
-traduit comme n'importe quel autre texte.
+The engine does not know gettext: it emits technical error messages **in
+English** in the JSON stream. The GUI renders them in the user's language by
+means of `ENGINE_MESSAGE_TEMPLATES`: each template is an English message with
+`{name}` fields (for example `"cannot open RAW file: {detail}"`), turned into
+a regular expression and translated like any other text.
 
-* Les parties variables sont conservées telles quelles (nom de fichier,
-  texte d'une bibliothèque tierce) et traduites récursivement si elles
-  correspondent à leur tour à un modèle — c'est ainsi que l'erreur
-  combinée « `cannot open RAW file: …` ; `LibRaw fallback: …` » est rendue
-  en entier.
-* Un message **inconnu** est affiché tel quel, en anglais : modifier un
-  message du moteur ne casse donc jamais l'IHM, il cesse seulement d'être
-  traduit.
-* **Quand on modifie un message dans `src/*.rs`**, il faut mettre à jour
-  le modèle correspondant dans l'IHM, puis lancer `po/update-po.sh` et
-  traduire la nouvelle entrée. `tests/test_i18n.py` vérifie que chaque
-  modèle existe encore dans le code Rust et que le `.pot` est à jour.
-* Le texte renvoyé par `rawloader` ou LibRaw (« Couldn't find a decoder for
-  this file… ») n'est pas traduit : il vient d'une bibliothèque tierce.
+* The variable parts are kept as they are (file name, text from a
+  third-party library) and translated recursively if they in turn match a
+  template — this is how the combined error "`cannot open RAW file: …` ;
+  `LibRaw fallback: …`" is rendered in full.
+* An **unknown** message is displayed as is, in English: changing an engine
+  message therefore never breaks the GUI, it just stops being translated.
+* **When you change a message in `src/*.rs`**, you must update the matching
+  template in the GUI, then run `po/update-po.sh` and translate the new
+  entry. `tests/test_i18n.py` checks that every template still exists in the
+  Rust code and that the `.pot` is up to date.
+* The text returned by `rawloader` or LibRaw ("Couldn't find a decoder for
+  this file…") is not translated: it comes from a third-party library.
 
-## Ajouter ou mettre à jour une langue
+## Adding or updating a language
 
-Voir `CONTRIBUTING.md`. En résumé : `po/update-po.sh` régénère le `.pot` et
-fusionne les nouveautés dans chaque `.po` (les entrées nouvelles ou
-modifiées sont marquées « fuzzy » ou vides) ; on traduit, on relance
-`po/update-po.sh` (qui vérifie le catalogue), puis `tests/test_i18n.py`.
+See `CONTRIBUTING.md`. In short: `po/update-po.sh` regenerates the `.pot` and
+merges the changes into each `.po` (new or modified entries are marked
+"fuzzy" or empty); you translate, run `po/update-po.sh` again (which checks
+the catalog), then `tests/test_i18n.py`.
 
 ---
 
-# Philosophie des dépendances
+# Dependency philosophy
 
-* **LibRaw embarquée, jamais installée** — `rawloader` + `imagepipe` (Rust
-  pur) restent le décodeur principal ; LibRaw sert de secours et est
-  compilée **statiquement** depuis `vendor/libraw-sys` : aucune bibliothèque
-  système à lier ni à déclarer comme dépendance du paquet (contraste avec
-  `raw-thumbs`, qui lie `libraw` dynamiquement). Seul `g++` est requis à la
-  compilation ; `libclang` ne l'est pas (liaisons pré-générées).
-* Le moteur n'a besoin d'aucune dépendance graphique : GTK4 n'est requis
-  que côté `convert-images-gui` (Python), jamais côté Rust.
-* Toute nouvelle dépendance Rust doit se justifier par un bénéfice net
-  clair — la bibliothèque standard et `image` couvrent déjà l'essentiel.
+* **LibRaw bundled, never installed** — `rawloader` + `imagepipe` (pure
+  Rust) remain the main decoder; LibRaw is a safety net and is compiled
+  **statically** from `vendor/libraw-sys`: no system library to link against
+  or to declare as a package dependency (in contrast with `raw-thumbs`, which
+  links `libraw` dynamically). Only `g++` is required at build time;
+  `libclang` is not (pre-generated bindings).
+* The engine needs no graphical dependency: GTK4 is only required on the
+  `convert-images-gui` (Python) side, never on the Rust side.
+* Any new Rust dependency must be justified by a clear net benefit — the
+  standard library and `image` already cover most needs.
 
 ---
 
-# Note de toolchain
+# Toolchain note
 
-Voir la section « Toolchain » du `README.fr.md` pour les versions de crates
-figées et pourquoi.
+See the "Toolchain note" section of `README.md` for the pinned crate versions
+and why.

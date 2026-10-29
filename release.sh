@@ -13,6 +13,11 @@ set -euo pipefail
 #   4. commit + push sur main
 #   5. creation de la release (tag, notes, .deb, .rpm, un .sha256 par paquet)
 #
+# Les notes de la release sont publiees en anglais d'abord (le README affiche
+# l'anglais par defaut), puis en francais. Elles viennent de la section datee
+# du jour de CHANGELOG.md (anglais) et de CHANGELOG.fr.md (francais) : les deux
+# sont obligatoires.
+#
 # A lancer depuis la racine du depot, apres les builds habituels.
 # Utiliser --dry-run pour tout voir sans rien modifier ni publier.
 # ============================================================
@@ -232,28 +237,42 @@ def readme(s):
             "d'appareils photo.")
     return s
 
-def changelog(s):
-    marker = f"tag `v{version}`"
-    if marker in s:
-        return s
-    has_today = re.search(r'^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?$', s, flags=re.M)
-    if first:
-        para = f"Première release stable publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`)."
-    elif has_today:
-        return s  # section du jour déjà rédigée à la main : on n'y touche pas
-    else:
-        para = f"Release stable `v{version}` publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`)."
-    if has_today:
-        return re.sub(r'(^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?\n)',
-                      lambda m: m.group(1) + "\n" + para + "\n", s, count=1, flags=re.M)
-    return s.replace("## [Non publié]\n", f"## [Non publié]\n\n## {today}\n\n{para}\n", 1)
+def make_changelog(unreleased, first_para, other_para):
+    """CHANGELOG.md (anglais, « [Unreleased] ») et CHANGELOG.fr.md (francais,
+    « [Non publié] ») : meme logique, textes differents."""
+    def changelog(s):
+        marker = f"tag `v{version}`"
+        if marker in s:
+            return s
+        has_today = re.search(r'^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?$', s, flags=re.M)
+        if first:
+            para = first_para.format(marker=marker)
+        elif has_today:
+            return s  # section du jour déjà rédigée à la main : on n'y touche pas
+        else:
+            para = other_para.format(marker=marker, tag=f"v{version}")
+        if has_today:
+            return re.sub(r'(^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?\n)',
+                          lambda m: m.group(1) + "\n" + para + "\n", s, count=1, flags=re.M)
+        return s.replace(f"## [{unreleased}]\n", f"## [{unreleased}]\n\n## {today}\n\n{para}\n", 1)
+    return changelog
+
+changelog_fr = make_changelog(
+    "Non publié",
+    "Première release stable publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`).",
+    "Release stable `{tag}` publiée sur GitHub ({marker}, paquets `.deb` et `.rpm`).")
+changelog_en = make_changelog(
+    "Unreleased",
+    "First stable release published on GitHub ({marker}, `.deb` and `.rpm` packages).",
+    "Stable release `{tag}` published on GitHub ({marker}, `.deb` and `.rpm` packages).")
 
 patch("build-deb.sh", fix_maint, "MAINTAINER réel")
 patch("build-rpm.sh", fix_maint, "MAINTAINER réel")
 patch("build-rpm.sh", fix_deps, "dépendances Fedora/RHEL (python3-gobject, gtk4, nautilus-python)")
 patch("Cargo.toml", sync_cargo, f"version = {version}")
 patch("README.fr.md", readme, "statut « stable »" + (" + décodage RAW validé" if raw_tested else ""))
-patch("CHANGELOG.md", changelog, f"entrée {today} (release v{version})")
+patch("CHANGELOG.md", changelog_en, f"entrée {today} (release v{version})")
+patch("CHANGELOG.fr.md", changelog_fr, f"entrée {today} (release v{version})")
 
 for c in changes:
     print(c)
@@ -335,7 +354,8 @@ stale_sources() {
   local pkg="$1"
   [ -f "$pkg" ] || return 0
   find src nautilus-extension packaging po Cargo.toml Cargo.lock build-deb.sh build-rpm.sh \
-       README.md README.fr.md CHANGELOG.md PROJECT_CONTEXT.md ARCHITECTURE.md CONTRIBUTING.md LICENSE \
+       README.md README.fr.md CHANGELOG.md CHANGELOG.fr.md PROJECT_CONTEXT.md PROJECT_CONTEXT.fr.md \
+       ARCHITECTURE.md ARCHITECTURE.fr.md CONTRIBUTING.md CONTRIBUTING.fr.md LICENSE \
        -type f -newer "$pkg" -print -quit 2>/dev/null
 }
 
@@ -363,22 +383,55 @@ $NEED_REBUILD || info "Paquets existants a jour et conformes : ils seront publie
 # ------------------------------------------------------------
 NOTES="$WORK/notes.md"
 
-# Texte de la section datee du jour dans CHANGELOG.md (vide si absente).
-changelog_section() {
-  python3 -I - "$TODAY" <<'PY'
-import re, sys
-today = sys.argv[1]
-s = open("CHANGELOG.md", encoding="utf-8").read()
-m = re.search(r'^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?\n(.*?)(?=^## |\Z)', s, flags=re.M | re.S)
-print(m.group(1).strip() if m else "")
+# Les notes sont publiees en ANGLAIS d'abord (le README affiche l'anglais par
+# defaut), puis en francais. Sources : la section du jour de CHANGELOG.md
+# (anglais) et celle de CHANGELOG.fr.md (francais). Ecrit $WORK/notes_en.md et
+# $WORK/notes_fr.md ; sort en erreur, sans rien modifier, si l'une des deux
+# sections manque ou est vide.
+changelog_notes() {
+  python3 -I - "$TODAY" "$WORK" "$TAG" <<'PY'
+import os, re, sys
+today, work, tag = sys.argv[1:4]
+missing = []
+for path, name in (("CHANGELOG.md", "notes_en.md"), ("CHANGELOG.fr.md", "notes_fr.md")):
+    s = open(path, encoding="utf-8").read()
+    m = re.search(r'^## ' + re.escape(today) + r'(?:[ \t][^\n]*)?\n(.*?)(?=^## |\Z)', s, flags=re.M | re.S)
+    body = m.group(1).strip() if m else ""
+    if not body:
+        missing.append(path)
+        continue
+    with open(os.path.join(work, name), "w", encoding="utf-8") as f:
+        f.write(body + "\n")
+if missing:
+    sys.stderr.write(
+        f"\nErreur : section « ## {today} — {tag} » absente ou vide dans : {', '.join(missing)}.\n"
+        "Les notes de release sont publiees en anglais (comme le README) puis en francais :\n"
+        "CHANGELOG.md (anglais) et CHANGELOG.fr.md (francais) doivent chacun avoir la section\n"
+        "du jour, avec le meme titre. Exemple :\n\n"
+        f"  ## {today} — {tag}\n\n"
+        "  ### Added          (### Ajouté dans CHANGELOG.fr.md)\n\n"
+        "  - What changed.\n")
+    sys.exit(1)
 PY
 }
 
-{
-if $FIRST_RELEASE; then
-cat <<EOF
-# nautilus-convert-images $TAG
+first_release_en() {
+cat <<'EOF'
+First stable release: **lossless** image conversion straight from the Nautilus (GNOME Files) context menu.
 
+## Features
+
+- **Source formats**: RAW (CR2, CR3, NEF, ARW, DNG, ORF, RAF, RW2, PEF, SRW, X3F…), JPEG, PNG, TIFF, BMP, GIF, WebP — detected by extension then by content, including inside selected folders.
+- **Destination formats**: JPEG (default, quality 100), PNG, TIFF, BMP, WebP — full resolution, **no cropping or resizing**; PNG, TIFF, BMP and WebP are lossless.
+- **Native GTK4 interface**: real-time detection, choice of format and destination folder (folder creation possible), file-name collision handling, progress and log.
+- **Parallel conversion** (Rust engine, pure-Rust RAW decoding, no libraw).
+- **Quit button**, with a warning if conversions are still running.
+- Compatible with versions 4.0 and 4.1 of the Nautilus library.
+EOF
+}
+
+first_release_fr() {
+cat <<'EOF'
 Première release stable : conversion d'images **sans perte** directement depuis le menu contextuel de Nautilus (GNOME Fichiers).
 
 ## Fonctionnalités
@@ -390,15 +443,37 @@ Première release stable : conversion d'images **sans perte** directement depuis
 - **Bouton Quitter**, avec avertissement si des conversions sont encore en cours.
 - Compatible avec les versions 4.0 et 4.1 de la bibliothèque Nautilus.
 EOF
-else
-SECTION="$(changelog_section)"
-printf '# %s %s\n\n## Nouveautés depuis %s\n\n' "$PKG" "$TAG" "$PREV_TAG"
-if [ -n "$SECTION" ]; then
-  printf '%s\n' "$SECTION"
-else
-  echo "Voir le CHANGELOG pour le détail."
-fi
-fi
+}
+
+install_en() {
+cat <<EOF
+
+## Installation
+
+Debian / Ubuntu and derivatives:
+
+\`\`\`bash
+sudo apt install ./${DEB}
+\`\`\`
+
+Fedora (tested on Fedora 44; \`dnf\` installs the dependencies itself). RHEL 10 family: \`nautilus-python\` comes from EPEL 10 (untested); RHEL, Rocky and AlmaLinux 8 and 9 are not supported (their \`nautilus-python\` is too old):
+
+\`\`\`bash
+sudo dnf install ./${RPM}
+\`\`\`
+
+Nautilus is restarted automatically at install time to enable the "Convert images…" entry in the context menu ("Convertir les images…" in French; the interface is also available in Spanish and German).
+
+Verify the downloads (each package and its \`.sha256\` file in the same folder):
+
+\`\`\`bash
+sha256sum -c ${DEB_SUM}
+sha256sum -c ${RPM_SUM}
+\`\`\`
+EOF
+}
+
+install_fr() {
 cat <<EOF
 
 ## Installation
@@ -424,17 +499,58 @@ sha256sum -c ${DEB_SUM}
 sha256sum -c ${RPM_SUM}
 \`\`\`
 EOF
+}
+
+if ! $FIRST_RELEASE; then
+  changelog_notes || exit 1
+fi
+
+{
+printf '# %s %s\n\n' "$PKG" "$TAG"
+# --- English ---
+if $FIRST_RELEASE; then
+  first_release_en
+else
+  printf "## What's new since %s\n\n" "$PREV_TAG"
+  cat "$WORK/notes_en.md"
+fi
+install_en
 if [ "$RAW_TESTED" != "1" ]; then
-cat <<'EOF'
+cat <<EOF
 
-## Limite connue
+## Known limitation
 
-Le décodage RAW utilise `rawloader`, puis LibRaw en secours pour les boîtiers inconnus du premier. La fidélité des couleurs n'a été vérifiée que sur un nombre limité de boîtiers : signalez tout fichier refusé ou aux couleurs douteuses via les [issues](https://github.com/gillesmagneville/nautilus-convert-images/issues), en indiquant le modèle d'appareil.
+RAW decoding uses \`rawloader\`, then LibRaw as a fallback for cameras the first one does not know. Color fidelity has only been checked on a limited number of camera models: please report any rejected file or doubtful colors via the [issues](https://github.com/${REPO_SLUG}/issues), mentioning the camera model.
 EOF
 fi
 cat <<EOF
 
-Voir le [CHANGELOG](https://github.com/${REPO_SLUG}/blob/main/CHANGELOG.md) pour le détail.
+See the [CHANGELOG](https://github.com/${REPO_SLUG}/blob/main/CHANGELOG.md) for details.
+
+---
+
+# Version française
+
+EOF
+# --- Français ---
+if $FIRST_RELEASE; then
+  first_release_fr
+else
+  printf '## Nouveautés depuis %s\n\n' "$PREV_TAG"
+  cat "$WORK/notes_fr.md"
+fi
+install_fr
+if [ "$RAW_TESTED" != "1" ]; then
+cat <<EOF
+
+## Limite connue
+
+Le décodage RAW utilise \`rawloader\`, puis LibRaw en secours pour les boîtiers inconnus du premier. La fidélité des couleurs n'a été vérifiée que sur un nombre limité de boîtiers : signalez tout fichier refusé ou aux couleurs douteuses via les [issues](https://github.com/${REPO_SLUG}/issues), en indiquant le modèle d'appareil.
+EOF
+fi
+cat <<EOF
+
+Voir le [CHANGELOG](https://github.com/${REPO_SLUG}/blob/main/CHANGELOG.fr.md) pour le détail.
 EOF
 } > "$NOTES"
 
@@ -499,7 +615,7 @@ if [ -n "$(git status --porcelain)" ]; then
     git commit -q -m "Release $TAG" \
                -m "Correctifs Nautilus 4.1 (typelib), JPEG par défaut, bouton Quitter avec avertissement, dépendances RPM Fedora/RHEL, maintainer réel et documentation à jour."
   else
-    git commit -q -m "Release $TAG" -m "Voir CHANGELOG.md."
+    git commit -q -m "Release $TAG" -m "Voir CHANGELOG.md et CHANGELOG.fr.md."
   fi
   info "Commit créé : $(git rev-parse --short HEAD)"
 else
