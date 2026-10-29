@@ -12,7 +12,20 @@ appartient à votre environnement local, avancé uniquement par vos propres
 lancements réussis de `build-deb.sh`/`build-rpm.sh`. Les entrées de ce
 changelog utilisent donc une date plutôt qu'un numéro de version.
 
-## [Non publié]
+## 2026-10-28 — v1.3.2
+
+### Ajouté
+
+- **Test du paquet `.rpm` dans un vrai Fedora** (`tests/fedora/test-fedora.sh`) :
+  lance un conteneur Fedora (podman ou docker), y installe le `.rpm` avec `dnf`,
+  vérifie son contenu, le moteur, GTK 4 et l'extension Nautilus (vraies liaisons
+  `nautilus-python`), fait tourner l'interface complète sous Xvfb dans les
+  quatre langues, puis désinstalle. Si GTK 4 est inutilisable, il identifie le
+  paquet manquant. À lancer avant de publier une release (voir
+  `CONTRIBUTING.md`).
+- Test du script d'installation (`tests/test_postinst.py`) : faux Nautilus,
+  langues gérées et non gérées, ordre de priorité des variables, comparaison
+  avec le choix réel de `gettext`.
 
 ### Modifié
 
@@ -23,19 +36,6 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
   sur l'anglais pour toute autre langue. Il était auparavant uniquement en
   français. Les traductions espagnole et allemande n'ont pas été relues par des
   locuteurs natifs.
-
-### Ajouté
-
-- Test du script d'installation (`tests/test_postinst.py`) : faux Nautilus,
-  langues gérées et non gérées, ordre de priorité des variables, comparaison
-  avec le choix réel de `gettext`.
-- **Test du paquet `.rpm` dans un vrai Fedora** (`tests/fedora/test-fedora.sh`) :
-  lance un conteneur Fedora (podman ou docker), y installe le `.rpm` avec `dnf`,
-  vérifie son contenu, le moteur, GTK 4 et l'extension Nautilus (vraies liaisons
-  `nautilus-python`), fait tourner l'interface complète sous Xvfb dans les
-  quatre langues, puis désinstalle. Si GTK 4 est inutilisable, il identifie le
-  paquet manquant. À lancer avant de publier une release (voir
-  `CONTRIBUTING.md`).
 
 ## 2026-10-28 — v1.3.1
 
