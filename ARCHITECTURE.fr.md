@@ -72,7 +72,7 @@ nautilus-convert-images/
 │   ├── convert_images_nautilus.py    # extension nautilus-python (menu contextuel)
 │   └── convert-images-gui             # IHM GTK4 autonome (Python + PyGObject)
 │
-├── vendor/libraw-sys/             # LibRaw 0.21.3 + liaisons (voir vendor/README.md)
+├── vendor/libraw-sys/             # LibRaw 0.21.3 + liaisons (voir vendor/README.fr.md)
 │
 ├── po/                            # traductions gettext (voir « Internationalisation »)
 │   ├── nautilus-convert-images.pot   # modèle : textes source en anglais

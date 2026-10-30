@@ -2,31 +2,33 @@
 
 # vendor/
 
+🇫🇷 [Version française](README.fr.md)
+
 ## libraw-sys
 
-Copie de [`rsraw-sys` 0.1.1](https://crates.io/crates/rsraw-sys) (licence
-MIT) : les liaisons Rust vers **LibRaw 0.21.3**, dont le code source C++
-est inclus (`libraw-sys/LibRaw/`, licences `LICENSE.LGPL` et
-`LICENSE.CDDL` conservées) et compilé **statiquement** dans
-`convert-images-engine`. Aucune bibliothèque LibRaw n'est donc à installer
-sur la machine, ni pour compiler ni pour exécuter.
+Copy of [`rsraw-sys` 0.1.1](https://crates.io/crates/rsraw-sys) (MIT
+license): the Rust bindings to **LibRaw 0.21.3**, whose C++ source code
+is included (`libraw-sys/LibRaw/`, with the `LICENSE.LGPL` and
+`LICENSE.CDDL` licenses kept) and compiled **statically** into
+`convert-images-engine`. No LibRaw library therefore needs to be installed
+on the machine, neither to build nor to run.
 
-LibRaw sert de **décodeur de secours** quand `rawloader` ne peut pas lire
-un fichier (typiquement un boîtier absent de sa base) — voir
-`src/raw.rs` et `ARCHITECTURE.md`, section « Décodage RAW ».
+LibRaw serves as a **fallback decoder** when `rawloader` cannot read a
+file (typically a camera missing from its database) — see
+`src/raw.rs` and `ARCHITECTURE.md`, section "RAW decoding".
 
-### Différences avec la version publiée sur crates.io
+### Differences from the version published on crates.io
 
-* `build.rs` : les liaisons sont toujours reprises du fichier pré-généré
-  `src/bindings.rs` ; `bindgen` n'est plus appelé. Cela évite d'exiger
-  `libclang` sur la machine de build. Seul un compilateur C++ (`g++`,
-  fourni par `build-essential`) est nécessaire.
-* `Cargo.toml` : la dépendance de build à `bindgen` est retirée.
+* `build.rs`: the bindings are always taken from the pre-generated file
+  `src/bindings.rs`; `bindgen` is no longer called. This avoids requiring
+  `libclang` on the build machine. Only a C++ compiler (`g++`, provided
+  by `build-essential`) is needed.
+* `Cargo.toml`: the build dependency on `bindgen` is removed.
 
-Rien d'autre n'est modifié.
+Nothing else is changed.
 
-### Mettre à jour LibRaw
+### Updating LibRaw
 
-Remplacer le contenu de `libraw-sys/` par une version plus récente de
-`rsraw-sys`, ré-appliquer les deux modifications ci-dessus, puis lancer
-`cargo test` (les tests de `src/libraw.rs` décodent un DNG synthétique).
+Replace the content of `libraw-sys/` with a more recent version of
+`rsraw-sys`, re-apply the two changes above, then run `cargo test` (the
+tests in `src/libraw.rs` decode a synthetic DNG).

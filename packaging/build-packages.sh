@@ -30,8 +30,10 @@ install -Dm644 nautilus-extension/convert_images_nautilus.py \
     "$STAGE/usr/share/nautilus-python/extensions/convert_images_nautilus.py"
 install -Dm644 packaging/nautilus-convert-images.desktop \
     "$STAGE/usr/share/applications/nautilus-convert-images.desktop"
-install -Dm644 README.md "$STAGE/usr/share/doc/nautilus-convert-images/README.md"
-install -Dm644 CHANGELOG.md "$STAGE/usr/share/doc/nautilus-convert-images/CHANGELOG.md"
+# La documentation dans les deux langues : anglais par défaut (X.md), français (X.fr.md).
+for doc in README.md README.fr.md CHANGELOG.md CHANGELOG.fr.md; do
+    install -Dm644 "$doc" "$STAGE/usr/share/doc/nautilus-convert-images/$doc"
+done
 install -Dm644 LICENSE "$STAGE/usr/share/doc/nautilus-convert-images/LICENSE"
 
 COMMON_FPM_ARGS=(
