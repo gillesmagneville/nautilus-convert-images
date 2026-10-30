@@ -16,6 +16,21 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
 
 ## [Non publié]
 
+## 2026-10-30 — v1.3.4
+
+Version de maintenance : aucun changement fonctionnel (le moteur, l'extension
+Nautilus, l'IHM et les paquets `.deb` / `.rpm` sont identiques à la version
+précédente). Documentation uniquement.
+
+### Modifié
+
+- **`vendor/README` dans les deux langues** : `vendor/README.md` (anglais,
+  affiché par défaut sur GitHub) et `vendor/README.fr.md` (français), avec un
+  lien pour changer de langue en tête de chaque fichier.
+- `packaging/build-packages.sh` (le script de construction de paquets
+  alternatif) embarque désormais aussi `README.fr.md` et `CHANGELOG.fr.md`,
+  comme le font déjà `build-deb.sh` et `build-rpm.sh`.
+
 ## 2026-10-29 — v1.3.3
 
 Version de maintenance : aucun changement fonctionnel (le moteur, l'extension

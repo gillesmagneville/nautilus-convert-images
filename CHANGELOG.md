@@ -16,6 +16,21 @@ a date rather than a version number.
 
 ## [Unreleased]
 
+## 2026-10-30 — v1.3.4
+
+Maintenance release: no functional change (the engine, the Nautilus
+extension, the GUI and the `.deb` / `.rpm` packages are identical to the
+previous version). Documentation only.
+
+### Changed
+
+- **`vendor/README` in both languages**: `vendor/README.md` (English, shown
+  by default on GitHub) and `vendor/README.fr.md` (French), with a link to
+  switch language at the top of each file.
+- `packaging/build-packages.sh` (the alternative packaging script) now also
+  ships the French `README.fr.md` and `CHANGELOG.fr.md`, as `build-deb.sh` and
+  `build-rpm.sh` already do.
+
 ## 2026-10-29 — v1.3.3
 
 Maintenance release: no functional change (the engine, the Nautilus
