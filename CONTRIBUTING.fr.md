@@ -7,6 +7,9 @@
 Merci de l'intérêt porté à ce projet ! Ce document explique comment
 signaler un problème, proposer une amélioration, ou contribuer du code.
 
+En participant à ce projet, vous vous engagez à respecter son
+[Code de conduite](CODE_OF_CONDUCT.fr.md).
+
 ## Signaler un bug
 
 Ouvrez une issue en précisant :
@@ -170,8 +173,9 @@ sous `[Unreleased]` (`[Non publié]` dans le fichier français), et
 `ARCHITECTURE.md` / `ARCHITECTURE.fr.md` si le contrat technique change.
 
 Chaque document existe en deux langues : l'anglais (`README.md`,
-`PROJECT_CONTEXT.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`, `CHANGELOG.md`,
-affiché par défaut sur GitHub) et le français (les mêmes noms avec
+`PROJECT_CONTEXT.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`,
+`CODE_OF_CONDUCT.md`, `CHANGELOG.md`, affiché par défaut sur GitHub) et le
+français (les mêmes noms avec
 `.fr.md`). Si vous modifiez l'un, modifiez aussi l'autre. Si vous n'écrivez
 que dans une langue, dites-le dans la pull request : le mainteneur traduira.
 
@@ -187,4 +191,5 @@ simplement une issue.
 ## Licence
 
 En contribuant, vous acceptez que vos contributions soient publiées sous
-la même licence que le projet (GPL-3.0-only).
+la même licence que le projet (GPL-3.0-only). Le code de conduite est la seule
+exception : c'est le _Contributor Covenant_ 3.0, distribué sous CC BY-SA 4.0.

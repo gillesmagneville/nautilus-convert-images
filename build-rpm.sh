@@ -5,14 +5,14 @@ set -euo pipefail
 # ============================================================
 # nautilus-convert-images - build-rpm.sh
 #
-# Construit un paquet .rpm (Fedora, RHEL, Rocky, AlmaLinux, openSUSE, ...)
-# avec fpm. Meme structure et memes principes que build-deb.sh : voir ce
-# fichier pour les commentaires detailles sur chaque etape.
+# Builds a .rpm package (Fedora, RHEL, Rocky, AlmaLinux, openSUSE, ...)
+# with fpm. Same structure and same principles as build-deb.sh: see that
+# file for the detailed comments on each step.
 # ============================================================
 
 PACKAGE_NAME="nautilus-convert-images"
 MAINTAINER="Gilles MAGNEVILLE <gilles@magneville.fr>"
-DESCRIPTION="Conversion d'images (RAW, JPEG, PNG, TIFF, BMP, WebP) sans perte, integree au menu contextuel de Nautilus"
+DESCRIPTION="Lossless image conversion (RAW, JPEG, PNG, TIFF, BMP, WebP), built into the Nautilus context menu"
 URL="https://github.com/gillesmagneville/nautilus-convert-images"
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,17 +24,17 @@ show_help() {
   cat <<EOF
 Usage: ./build-rpm.sh [options]
 
-Construit un paquet .rpm pour nautilus-convert-images.
+Builds a .rpm package for nautilus-convert-images.
 
-  --major               Incremente le numero majeur (1.2.3 -> 2.0.0)
-  --minor               Incremente le numero mineur (1.2.3 -> 1.3.0)
-  --patch               Incremente le numero de patch (1.2.3 -> 1.2.4)
-  --no-version-change   Reconstruit sans changer la version
-  --yes, -y             Ne pas demander de confirmation avant de construire
-  --clean               Nettoie le dossier de build et les .rpm generes
-  --help, -h            Affiche cette aide
+  --major               Bump the major number (1.2.3 -> 2.0.0)
+  --minor               Bump the minor number (1.2.3 -> 1.3.0)
+  --patch               Bump the patch number (1.2.3 -> 1.2.4)
+  --no-version-change   Rebuild without changing the version
+  --yes, -y             Do not ask for confirmation before building
+  --clean               Remove the build folder and the generated .rpm files
+  --help, -h            Show this help
 
-Sans argument de version : mode interactif (necessite un terminal).
+Without a version option: interactive mode (needs a terminal).
 EOF
 }
 
@@ -52,79 +52,79 @@ while [[ $# -gt 0 ]]; do
     --yes|-y) ASSUME_YES=true; shift ;;
     --clean) CLEAN=true; shift ;;
     --help|-h) show_help; exit 0 ;;
-    *) echo "Option inconnue : $1"; show_help; exit 1 ;;
+    *) echo "Unknown option: $1"; show_help; exit 1 ;;
   esac
 done
 
 if [ "$CLEAN" = true ]; then
-  echo ">>> Nettoyage du dossier de build et des .rpm generes..."
+  echo ">>> Cleaning the build folder and the generated .rpm files..."
   rm -rf "$BUILD_DIR"
   rm -f "$PROJECT_DIR"/*.rpm
-  echo ">>> Termine."
+  echo ">>> Done."
   exit 0
 fi
 
-# --- Verification des outils requis ---
+# --- Checking the required tools ---
 if ! command -v fpm &> /dev/null; then
-  echo "Erreur : fpm n'est pas installe."
-  echo "Installe-le avec : gem install --user-install fpm"
+  echo "Error: fpm is not installed."
+  echo "Install it with: gem install --user-install fpm"
   exit 1
 fi
 if ! command -v cargo &> /dev/null; then
-  echo "Erreur : cargo (Rust) n'est pas installe. Voir https://rustup.rs"
+  echo "Error: cargo (Rust) is not installed. See https://rustup.rs"
   exit 1
 fi
 if ! command -v msgfmt &> /dev/null; then
-  echo "Erreur : msgfmt (outils GNU gettext) est introuvable : il compile les"
-  echo "traductions (po/*.po) incluses dans le paquet."
-  echo "Sur Debian/Ubuntu :               sudo apt install gettext"
-  echo "Sur Fedora/RHEL/Rocky/AlmaLinux : sudo dnf install gettext"
-  echo "Sur openSUSE :                    sudo zypper install gettext-tools"
+  echo "Error: msgfmt (GNU gettext tools) not found: it compiles the"
+  echo "translations (po/*.po) included in the package."
+  echo "On Debian/Ubuntu:                sudo apt install gettext"
+  echo "On Fedora/RHEL/Rocky/AlmaLinux:  sudo dnf install gettext"
+  echo "On openSUSE:                     sudo zypper install gettext-tools"
   exit 1
 fi
 if ! command -v rpmbuild &> /dev/null; then
-  echo "Erreur : rpmbuild introuvable (necessaire pour generer un .rpm)."
-  echo "Sur Debian/Ubuntu :               sudo apt install rpm"
-  echo "Sur Fedora/RHEL/Rocky/AlmaLinux : sudo dnf install rpm-build"
-  echo "Sur openSUSE :                    sudo zypper install rpm-build"
+  echo "Error: rpmbuild not found (needed to generate a .rpm)."
+  echo "On Debian/Ubuntu:                sudo apt install rpm"
+  echo "On Fedora/RHEL/Rocky/AlmaLinux:  sudo dnf install rpm-build"
+  echo "On openSUSE:                     sudo zypper install rpm-build"
   exit 1
 fi
 
-# --- Lecture de la version actuelle ---
+# --- Reading the current version ---
 CURRENT_VERSION="0.1.0"
 [ -f "$VERSION_FILE" ] && CURRENT_VERSION=$(tr -d '[:space:]' < "$VERSION_FILE")
 
 IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
 MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
 
-# --- Mode interactif si aucun argument de version fourni ---
-# Sans flag de version ET sans terminal interactif, il n'y a aucune
-# facon de savoir quoi faire : mieux vaut echouer clairement ici que de
-# laisser `read` toucher un EOF silencieux plus loin (ce qui, avec
-# `set -e`, tuerait le script sans message avant meme la compilation --
-# VERSION et Cargo.toml resteraient donc inchanges sans aucune explication).
+# --- Interactive mode if no version argument was given ---
+# With no version flag AND no interactive terminal, there is no way to
+# know what to do: better to fail clearly here than to let `read` hit a
+# silent EOF further down (which, with `set -e`, killed the script
+# without a message before even compiling -- VERSION and Cargo.toml were
+# therefore left unchanged with no explanation).
 if [ -z "$INCREMENT" ] && [ "$NO_VERSION_CHANGE" = false ]; then
   if [ ! -t 0 ]; then
-    echo "Erreur : aucun flag de version fourni (--major/--minor/--patch/"
-    echo "--no-version-change) et aucun terminal interactif disponible pour"
-    echo "le menu de choix. Relance avec l'un de ces flags."
+    echo "Error: no version flag given (--major/--minor/--patch/"
+    echo "--no-version-change) and no interactive terminal available for"
+    echo "the choice menu. Run again with one of these flags."
     exit 1
   fi
   echo ""
-  echo "Version actuelle : $CURRENT_VERSION"
+  echo "Current version: $CURRENT_VERSION"
   echo ""
   echo "  1) major (-> $((MAJOR + 1)).0.0)"
   echo "  2) minor (-> $MAJOR.$((MINOR + 1)).0)"
   echo "  3) patch (-> $MAJOR.$MINOR.$((PATCH + 1)))"
-  echo "  4) no-version-change (reconstruire en $CURRENT_VERSION)"
+  echo "  4) no-version-change (rebuild as $CURRENT_VERSION)"
   echo ""
-  read -p "Choix [1/2/3/4] : " CHOICE
+  read -p "Choice [1/2/3/4]: " CHOICE
   case $CHOICE in
     1) INCREMENT="major" ;;
     2) INCREMENT="minor" ;;
     3) INCREMENT="patch" ;;
     4) NO_VERSION_CHANGE=true ;;
-    *) echo "Choix invalide. Annulation."; exit 1 ;;
+    *) echo "Invalid choice. Cancelled."; exit 1 ;;
   esac
 fi
 
@@ -141,64 +141,63 @@ fi
 
 echo ""
 echo "========================================"
-echo " Paquet   : $PACKAGE_NAME"
+echo " Package  : $PACKAGE_NAME"
 echo " Version  : $CURRENT_VERSION -> $NEW_VERSION"
 echo " Format   : .rpm"
 echo "========================================"
 echo ""
-# A ce stade, soit un flag de version a ete fourni explicitement (dans
-# ce cas stdin peut etre non-interactif : c'est un usage scripte/CI
-# legitime), soit le menu interactif ci-dessus a deja confirme qu'un
-# terminal est bien disponible. Ne demander confirmation que si on peut
-# reellement lire une reponse -- sinon `read` echoue silencieusement sur
-# EOF et, avec `set -e`, tuerait le script sans message avant meme de
-# compiler.
+# At this point, either a version flag was given explicitly (in which
+# case stdin may be non-interactive: that is a legitimate scripted/CI
+# use), or the interactive menu above has already confirmed that a
+# terminal is available. Only ask for confirmation if an answer can
+# actually be read -- otherwise `read` fails silently on EOF and, with
+# `set -e`, killed the script without a message before even compiling.
 if [ "$ASSUME_YES" = true ]; then
-  echo "Confirmation automatique (--yes)."
+  echo "Automatic confirmation (--yes)."
 elif [ -t 0 ]; then
-  read -p "Construire ? [o/N] " CONFIRM
-  if [[ ! "$CONFIRM" =~ ^[oOyY]$ ]]; then
-    echo "Construction annulee. Aucun fichier n'a ete modifie."
+  read -p "Build? [y/N] " CONFIRM
+  if [[ ! "$CONFIRM" =~ ^[yY]$ ]]; then
+    echo "Build cancelled. No file was modified."
     exit 0
   fi
 else
-  echo "Pas de terminal interactif : confirmation automatique (un flag de version a ete fourni explicitement)."
+  echo "No interactive terminal: automatic confirmation (a version flag was given explicitly)."
 fi
 
-# --- Mise a jour temporaire de Cargo.toml AVANT compilation, pour que le
-#     binaire embarque le bon numero via `convert-images-engine --version`.
-#     Reverti si une etape echoue plus loin. ---
+# --- Temporary update of Cargo.toml BEFORE compiling, so that the binary
+#     embeds the right number through `convert-images-engine --version`.
+#     Reverted if a later step fails. ---
 if [ "$NEW_VERSION" != "$CURRENT_VERSION" ]; then
   sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" "$CARGO_TOML"
 fi
 
 echo ""
-echo ">>> Compilation en mode release (cargo build --release)..."
+echo ">>> Compiling in release mode (cargo build --release)..."
 BUILD_LOG=$(mktemp)
 if (cd "$PROJECT_DIR" && cargo build --release --quiet) > "$BUILD_LOG" 2>&1; then
   rm -f "$BUILD_LOG"
-  echo ">>> Compilation reussie."
+  echo ">>> Compilation succeeded."
 else
   echo ""
-  echo "Erreur : la compilation a echoue."
+  echo "Error: the compilation failed."
   echo ""
   sed 's/^/  /' "$BUILD_LOG"
   rm -f "$BUILD_LOG"
   sed -i "s/^version = \".*\"/version = \"$CURRENT_VERSION\"/" "$CARGO_TOML"
   echo ""
-  echo "Construction annulee : Cargo.toml restaure, aucun paquet genere."
+  echo "Build cancelled: Cargo.toml restored, no package generated."
   exit 1
 fi
 
 ENGINE_BINARY="$PROJECT_DIR/target/release/convert-images-engine"
 if [ ! -f "$ENGINE_BINARY" ]; then
-  echo "Erreur : binaire du moteur introuvable apres compilation ($ENGINE_BINARY)."
+  echo "Error: engine binary not found after compilation ($ENGINE_BINARY)."
   sed -i "s/^version = \".*\"/version = \"$CURRENT_VERSION\"/" "$CARGO_TOML"
   exit 1
 fi
 
 # --- Staging ---
-echo ">>> Creation de l'arborescence de staging..."
+echo ">>> Creating the staging tree..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/usr/bin"
 mkdir -p "$BUILD_DIR/usr/share/nautilus-python/extensions"
@@ -212,12 +211,12 @@ cp "$PROJECT_DIR/nautilus-extension/convert_images_nautilus.py" \
 cp "$PROJECT_DIR/packaging/nautilus-convert-images.desktop" \
   "$BUILD_DIR/usr/share/applications/nautilus-convert-images.desktop"
 
-# Traductions : chaque po/<langue>.po est compile en .mo (format binaire
-# lu par gettext) et installe dans /usr/share/locale/<langue>/LC_MESSAGES/.
-# Le nom du fichier .mo doit etre identique au domaine gettext declare dans
-# l'IHM et l'extension (I18N_DOMAIN = "nautilus-convert-images").
-# --check refuse un catalogue dont les champs {…} ne correspondent pas.
-echo ">>> Compilation des traductions (msgfmt)..."
+# Translations: each po/<language>.po is compiled to a .mo (the binary format
+# read by gettext) and installed in /usr/share/locale/<language>/LC_MESSAGES/.
+# The .mo file name must be identical to the gettext domain declared in the
+# GUI and in the extension (I18N_DOMAIN = "nautilus-convert-images").
+# --check rejects a catalog whose {…} fields do not match.
+echo ">>> Compiling the translations (msgfmt)..."
 I18N_DOMAIN="nautilus-convert-images"
 I18N_COUNT=0
 for po in "$PROJECT_DIR"/po/*.po; do
@@ -225,47 +224,49 @@ for po in "$PROJECT_DIR"/po/*.po; do
   lang="$(basename "$po" .po)"
   mkdir -p "$BUILD_DIR/usr/share/locale/$lang/LC_MESSAGES"
   if ! msgfmt --check -o "$BUILD_DIR/usr/share/locale/$lang/LC_MESSAGES/$I18N_DOMAIN.mo" "$po"; then
-    echo "Erreur : compilation de $po impossible."
+    echo "Error: could not compile $po."
     sed -i "s/^version = \".*\"/version = \"$CURRENT_VERSION\"/" "$CARGO_TOML"
     rm -rf "$BUILD_DIR"
-    echo "Construction annulee : Cargo.toml restaure, aucun paquet genere."
+    echo "Build cancelled: Cargo.toml restored, no package generated."
     exit 1
   fi
   I18N_COUNT=$((I18N_COUNT + 1))
 done
 if [ "$I18N_COUNT" -eq 0 ]; then
-  echo "Erreur : aucun catalogue po/*.po trouve : le paquet n'aurait aucune traduction."
+  echo "Error: no po/*.po catalog found: the package would have no translation."
   sed -i "s/^version = \".*\"/version = \"$CURRENT_VERSION\"/" "$CARGO_TOML"
   rm -rf "$BUILD_DIR"
   exit 1
 fi
-echo "    $I18N_COUNT langue(s) installee(s)."
-for doc in README.md README.fr.md CHANGELOG.md CHANGELOG.fr.md PROJECT_CONTEXT.md PROJECT_CONTEXT.fr.md ARCHITECTURE.md ARCHITECTURE.fr.md CONTRIBUTING.md CONTRIBUTING.fr.md LICENSE; do
+echo "    $I18N_COUNT language(s) installed."
+# The code of conduct (Contributor Covenant 3.0) is under CC-BY-SA-4.0, hence
+# the license expression given to fpm below.
+for doc in README.md README.fr.md CHANGELOG.md CHANGELOG.fr.md PROJECT_CONTEXT.md PROJECT_CONTEXT.fr.md ARCHITECTURE.md ARCHITECTURE.fr.md CONTRIBUTING.md CONTRIBUTING.fr.md CODE_OF_CONDUCT.md CODE_OF_CONDUCT.fr.md LICENSE; do
   [ -f "$PROJECT_DIR/$doc" ] && cp "$PROJECT_DIR/$doc" "$BUILD_DIR/usr/share/doc/$PACKAGE_NAME/"
 done
 
-# Normalisation des permissions : cp applique l'umask courant de la
-# machine de build, pas les permissions de la source. On force donc des
-# permissions coherentes, comme dans build-deb.sh de linuxdoctor.
-echo ">>> Normalisation des permissions..."
+# Permission normalization: cp applies the build machine's current umask,
+# not the permissions of the source. Consistent permissions are therefore
+# forced, as in linuxdoctor's build-deb.sh.
+echo ">>> Normalizing permissions..."
 find "$BUILD_DIR" -type d -exec chmod 755 {} +
 find "$BUILD_DIR" -type f -exec chmod 644 {} +
 chmod +x "$BUILD_DIR/usr/bin/convert-images-engine"
 chmod +x "$BUILD_DIR/usr/bin/convert-images-gui"
 
-# --- Construction du paquet ---
-# Dependances (noms Fedora) : gobject-introspection fournit les fichiers
-# d'introspection de cairo (cairo-1.0.typelib), indispensables a GTK 4 depuis
-# Python ; ni gtk4 ni python3-gobject ne les installent sur une Fedora
-# minimale (constate sur Fedora 44 : l'interface ne demarrait pas).
+# --- Building the package ---
+# Dependencies (Fedora names): gobject-introspection provides cairo's
+# introspection files (cairo-1.0.typelib), which GTK 4 needs from Python;
+# neither gtk4 nor python3-gobject installs them on a minimal Fedora (seen
+# on Fedora 44: the GUI did not start).
 echo ""
-echo ">>> Construction du paquet .rpm (fpm)..."
+echo ">>> Building the .rpm package (fpm)..."
 rm -f "$PROJECT_DIR"/*.rpm
 
 if (cd "$PROJECT_DIR" && fpm -s dir -t rpm \
   -n "$PACKAGE_NAME" \
   -v "$NEW_VERSION" \
-  --license "GPL-3.0-only" \
+  --license "GPL-3.0-only AND CC-BY-SA-4.0" \
   --maintainer "$MAINTAINER" \
   --description "$DESCRIPTION" \
   --url "$URL" \
@@ -277,26 +278,25 @@ if (cd "$PROJECT_DIR" && fpm -s dir -t rpm \
   -C "$BUILD_DIR" \
   usr/); then
 
-  # --- Version enregistree seulement apres un build complet reussi ---
+  # --- Version recorded only after a fully successful build ---
   echo "$NEW_VERSION" > "$VERSION_FILE"
   echo ""
-  echo "Paquet genere :"
+  echo "Package generated:"
   ls -1 "$PROJECT_DIR"/*.rpm | sed 's/^/   /'
-  echo "Version enregistree : $NEW_VERSION (VERSION + Cargo.toml)"
+  echo "Version recorded: $NEW_VERSION (VERSION + Cargo.toml)"
   echo ""
-  echo "Note : le nom du fichier .rpm contient un '-1' apres le numero de"
-  echo "version (ex. ${PACKAGE_NAME}-${NEW_VERSION}-1.x86_64.rpm). C'est le"
-  echo "champ \"Release\" du format RPM (distinct de \"Version\" dans la"
-  echo "convention NEVRA : Nom-Epoch:Version-Release.Architecture), fixe a 1"
-  echo "par defaut par fpm. Ce n'est pas une modification du numero de"
-  echo "version -- VERSION et Cargo.toml ci-dessus restent exacts, sans"
-  echo "aucun suffixe. Le format .deb n'a pas cette notion, d'ou l'absence"
-  echo "de ce suffixe cote build-deb.sh."
+  echo "Note: the .rpm file name contains a '-1' after the version number"
+  echo "(e.g. ${PACKAGE_NAME}-${NEW_VERSION}-1.x86_64.rpm). It is the RPM"
+  echo "\"Release\" field (distinct from \"Version\" in the NEVRA convention:"
+  echo "Name-Epoch:Version-Release.Architecture), set to 1 by default by"
+  echo "fpm. It is not a change to the version number -- VERSION and"
+  echo "Cargo.toml above remain exact, with no suffix. The .deb format has"
+  echo "no such notion, hence the absence of this suffix in build-deb.sh."
 else
   echo ""
-  echo "Erreur : fpm a echoue."
+  echo "Error: fpm failed."
   sed -i "s/^version = \".*\"/version = \"$CURRENT_VERSION\"/" "$CARGO_TOML"
   rm -rf "$BUILD_DIR"
-  echo "Construction annulee : Cargo.toml restaure."
+  echo "Build cancelled: Cargo.toml restored."
   exit 1
 fi

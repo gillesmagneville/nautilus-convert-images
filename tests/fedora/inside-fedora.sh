@@ -1,23 +1,23 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Exécuté À L'INTÉRIEUR du conteneur Fedora par test-fedora.sh.
-# Ne pas le lancer directement sur votre machine : il installe des paquets.
+# Run INSIDE the Fedora container by test-fedora.sh.
+# Do not run it directly on your machine: it installs packages.
 
 set -u
-KIT=/tests/fedora   # le dossier tests/ du dépôt, monté en lecture seule
-RPM="/pkg/${RPM_NAME:?RPM_NAME non défini}"
+KIT=/tests/fedora   # the repository's tests/ folder, mounted read-only
+RPM="/pkg/${RPM_NAME:?RPM_NAME is not set}"
 PASS=0
 FAIL=0
 MISSING_DEP=""
 
 ok()   { echo "  [OK]    $*"; PASS=$((PASS + 1)); }
-ko()   { echo "  [ÉCHEC] $*"; FAIL=$((FAIL + 1)); }
+ko()   { echo "  [FAIL]  $*"; FAIL=$((FAIL + 1)); }
 info() { echo "  [info]  $*"; }
 step() { echo; echo "=== $* ==="; }
 
-# run "description" commande… : OK si le code de sortie est 0, sinon ÉCHEC
-# avec la fin de la sortie de la commande.
+# run "description" command...: OK if the exit code is 0, otherwise FAIL
+# with the tail of the command's output.
 run() {
     local desc="$1"; shift
     local out rc
@@ -37,29 +37,29 @@ run() {
 summary() {
     echo
     if [ -n "$MISSING_DEP" ]; then
-        echo " DÉPENDANCE MANQUANTE AU PAQUET : $MISSING_DEP"
-        echo " (les étapes suivantes ont tourné avec ce paquet installé en plus)"
+        echo " MISSING DEPENDENCY IN THE PACKAGE: $MISSING_DEP"
+        echo " (the following steps ran with this package installed in addition)"
     fi
     echo "=============================================="
     if [ "$FAIL" -eq 0 ]; then
-        echo " RÉSULTAT : TOUT EST OK  ($PASS vérifications réussies, 0 échec)"
+        echo " RESULT: EVERYTHING IS OK  ($PASS checks passed, 0 failures)"
     else
-        echo " RÉSULTAT : $FAIL ÉCHEC(S)  ($PASS vérifications réussies)"
+        echo " RESULT: $FAIL FAILURE(S)  ($PASS checks passed)"
     fi
     echo "=============================================="
     [ "$FAIL" -eq 0 ]
 }
 
-step "1. Système"
+step "1. System"
 cat /etc/fedora-release
-info "glibc : $(rpm -q glibc)"
-info "paquet testé : $RPM_NAME"
+info "glibc: $(rpm -q glibc)"
+info "package tested: $RPM_NAME"
 
-step "2. Installation du paquet avec dnf (dépendances résolues par Fedora)"
+step "2. Installing the package with dnf (dependencies resolved by Fedora)"
 if dnf -y install --setopt=install_weak_deps=False "$RPM" >/tmp/dnf-install.log 2>&1; then
-    ok "dnf install a réussi"
+    ok "dnf install succeeded"
 else
-    ko "dnf install a échoué"
+    ko "dnf install failed"
     tail -30 /tmp/dnf-install.log | sed 's/^/      /'
     summary
     exit 1
@@ -68,18 +68,18 @@ for pkg in nautilus-convert-images gtk4 nautilus-python python3-gobject; do
     if rpm -q "$pkg" >/dev/null 2>&1; then
         info "$(rpm -q "$pkg")"
     else
-        ko "paquet $pkg non installé"
+        ko "package $pkg not installed"
     fi
 done
 
-step "3. Contenu du paquet installé"
-# Le conteneur Fedora peut refuser d'installer la documentation (« nodocs ») :
-# on ignore donc les fichiers de documentation manquants.
+step "3. Contents of the installed package"
+# The Fedora container may refuse to install the documentation ("nodocs"):
+# missing documentation files are therefore ignored.
 bad=$(rpm -V nautilus-convert-images 2>&1 | grep -v -E '^missing +d ' || true)
 if [ -z "$bad" ]; then
-    ok "rpm -V : aucun écart avec le paquet"
+    ok "rpm -V: no difference from the package"
 else
-    ko "rpm -V signale des écarts"
+    ko "rpm -V reports differences"
     echo "$bad" | sed 's/^/      /'
 fi
 for f in /usr/bin/convert-images-engine /usr/bin/convert-images-gui \
@@ -88,66 +88,66 @@ for f in /usr/bin/convert-images-engine /usr/bin/convert-images-gui \
          /usr/share/locale/fr/LC_MESSAGES/nautilus-convert-images.mo \
          /usr/share/locale/es/LC_MESSAGES/nautilus-convert-images.mo \
          /usr/share/locale/de/LC_MESSAGES/nautilus-convert-images.mo; do
-    if [ -e "$f" ]; then ok "présent : $f"; else ko "absent : $f"; fi
+    if [ -e "$f" ]; then ok "present: $f"; else ko "missing: $f"; fi
 done
 
-step "4. Moteur (programme Rust) sur ce Fedora"
+step "4. Engine (Rust program) on this Fedora"
 run "convert-images-engine --version" convert-images-engine --version
 info "$(convert-images-engine --version 2>&1)"
 if ldd /usr/bin/convert-images-engine 2>&1 | grep -q 'not found'; then
-    ko "bibliothèque manquante pour le moteur :"
+    ko "missing library for the engine:"
     ldd /usr/bin/convert-images-engine | grep 'not found' | sed 's/^/      /'
 else
-    ok "toutes les bibliothèques du moteur sont présentes (ldd)"
+    ok "all the engine's libraries are present (ldd)"
 fi
 run "convert-images-engine formats" convert-images-engine formats
 
-step "5. GTK 4 et PyGObject"
+step "5. GTK 4 and PyGObject"
 if gtk_out=$(python3 -c "$GTK_CHECK" 2>&1); then
-    ok "GTK 4.10 ou plus récent est utilisable depuis Python (nécessaire à l'interface)"
+    ok "GTK 4.10 or newer is usable from Python (needed by the GUI)"
     info "$gtk_out"
 else
-    ko "GTK 4 est inutilisable depuis Python : l'interface ne peut pas démarrer"
+    ko "GTK 4 is unusable from Python: the GUI cannot start"
     echo "$gtk_out" | tail -3 | sed 's/^/      /'
     diagnose_missing_typelib "$gtk_out"
 fi
 
-step "6. Extension Nautilus avec les vraies liaisons de nautilus-python"
-LANGUAGE=en run "entrée de menu en anglais" python3 "$KIT/helpers/check_extension.py" "Convert images…"
-LANGUAGE=fr run "entrée de menu en français" python3 "$KIT/helpers/check_extension.py" "Convertir les images…"
+step "6. Nautilus extension with the real nautilus-python bindings"
+LANGUAGE=en run "menu entry in English" python3 "$KIT/helpers/check_extension.py" "Convert images…"
+LANGUAGE=fr run "menu entry in French" python3 "$KIT/helpers/check_extension.py" "Convertir les images…"
 
-step "7. Interface graphique complète (écran virtuel Xvfb), vrais fichiers, 4 langues"
+step "7. Full GUI (virtual Xvfb screen), real files, 4 languages"
 if dnf -y install --setopt=install_weak_deps=False xorg-x11-server-Xvfb xorg-x11-xauth dejavu-sans-fonts >/tmp/dnf-xvfb.log 2>&1; then
-    ok "outils d'écran virtuel installés (Xvfb)"
+    ok "virtual screen tools installed (Xvfb)"
     for lang in en fr es de; do
         samples=$(mktemp -d)
         python3 "$KIT/helpers/make_samples.py" "$samples" >/dev/null
-        # run_smoke.py imprime lui-même sa ligne [OK] ou [ÉCHEC] (avec le journal en cas d'échec).
+        # run_smoke.py prints its own [OK] or [FAIL] line (with the log on failure).
         out=$(python3 "$KIT/helpers/run_smoke.py" "$lang" "$samples" 2>&1); rc=$?
         echo "$out" | grep -v -E 'libEGL|dbus-launch|^$'
         if [ $rc -eq 0 ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); fi
     done
 else
-    ko "impossible d'installer Xvfb : l'interface n'a pas pu être testée"
+    ko "could not install Xvfb: the GUI could not be tested"
     tail -15 /tmp/dnf-xvfb.log | sed 's/^/      /'
 fi
 
-step "8. Désinstallation"
+step "8. Uninstallation"
 if dnf -y remove nautilus-convert-images >/tmp/dnf-remove.log 2>&1; then
-    ok "dnf remove a réussi"
+    ok "dnf remove succeeded"
 else
-    ko "dnf remove a échoué"
+    ko "dnf remove failed"
     tail -15 /tmp/dnf-remove.log | sed 's/^/      /'
 fi
 for f in /usr/bin/convert-images-engine /usr/bin/convert-images-gui \
          /usr/share/nautilus-python/extensions/convert_images_nautilus.py; do
-    if [ -e "$f" ]; then ko "toujours présent après désinstallation : $f"; else ok "supprimé : $f"; fi
+    if [ -e "$f" ]; then ko "still present after uninstallation: $f"; else ok "removed: $f"; fi
 done
 if [ -d /usr/share/doc/nautilus-convert-images ]; then
     if [ -z "$(ls -A /usr/share/doc/nautilus-convert-images)" ]; then
-        info "dossier vide laissé par le paquet (sans gravité) : /usr/share/doc/nautilus-convert-images"
+        info "empty folder left by the package (harmless): /usr/share/doc/nautilus-convert-images"
     else
-        ko "des fichiers restent après désinstallation : /usr/share/doc/nautilus-convert-images"
+        ko "files remain after uninstallation: /usr/share/doc/nautilus-convert-images"
     fi
 fi
 

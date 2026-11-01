@@ -17,7 +17,8 @@ that's all.
 > **Note:** the user interface is available in **English, French, Spanish
 > and German** (see [Languages](#languages)). The other documents
 > (`PROJECT_CONTEXT.md` for the vision and principles, `ARCHITECTURE.md`
-> for the technical contract, `CONTRIBUTING.md`, `CHANGELOG.md`) exist in
+> for the technical contract, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
+> `CHANGELOG.md`) exist in
 > **English and French**: each one has a link to switch language at the top,
 > and the French files end in `.fr.md`.
 
@@ -338,6 +339,7 @@ nautilus-convert-images/
 ├── VERSION                  # current version (= tag of the latest release)
 ├── CHANGELOG.md              # Keep a Changelog format (+ CHANGELOG.fr.md)
 ├── CONTRIBUTING.md            # reporting a bug, adding a format, code style (+ CONTRIBUTING.fr.md)
+├── CODE_OF_CONDUCT.md         # code of conduct, Contributor Covenant 3.0 (+ CODE_OF_CONDUCT.fr.md)
 ├── build-deb.sh                 # .deb packaging (fpm)
 ├── build-rpm.sh                   # .rpm packaging (fpm)
 ├── release.sh                       # GitHub release publishing
@@ -384,6 +386,10 @@ nautilus-convert-images/
 ## License
 
 GPL-3.0-only. See [LICENSE](LICENSE).
+
+The code of conduct ([CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)) is the
+Contributor Covenant 3.0, adapted for this project; it is distributed under
+its own license, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
 nautilus-convert-images is developed by Gilles MAGNEVILLE. Gilles is not a
 professional developer — this project was built with the help of Claude.ai.

@@ -1,21 +1,21 @@
 #!/bin/sh
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Script post-installation (fpm --after-install), exécuté en root.
+# Post-install script (fpm --after-install), run as root.
 set -e
 
-# Redémarre Nautilus s'il est en cours d'exécution, pour qu'il recharge
-# la liste des extensions Python et prenne en compte
-# nautilus-convert-images immédiatement (sinon, l'entrée de menu
-# n'apparaît qu'à la prochaine ouverture de session).
+# Restarts Nautilus if it is running, so that it reloads the list of Python
+# extensions and picks up
+# nautilus-convert-images immediately (otherwise, the menu entry
+# only appears at the next login).
 #
-# Le message affiché suit la langue du système : anglais, français, espagnol
-# ou allemand, avec repli sur l'anglais. La langue est choisie selon les mêmes
-# règles que gettext (et donc que l'entrée de menu elle-même) : on prend la
-# première variable non vide parmi LANGUAGE, LC_ALL, LC_MESSAGES et LANG ; elle
-# peut contenir plusieurs langues séparées par « : », la première langue
-# disponible gagne ; « C » et « POSIX » arrêtent la recherche (anglais).
-# Ce bloc est volontairement identique dans le postinst de raw-thumbs.
+# The message shown follows the system language: English, French, Spanish
+# or German, falling back to English. The language is chosen by the same
+# rules as gettext (and therefore as the menu entry itself): take the
+# first non-empty variable among LANGUAGE, LC_ALL, LC_MESSAGES and LANG; it
+# may hold several languages separated by ":", the first available language
+# wins; "C" and "POSIX" stop the search (English).
+# This block is deliberately identical in raw-thumbs's postinst.
 pick_language() {
     _lang=en
     _list=

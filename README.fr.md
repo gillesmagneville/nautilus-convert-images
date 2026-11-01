@@ -342,6 +342,7 @@ nautilus-convert-images/
 ├── VERSION                  # version courante (= tag de la dernière release)
 ├── CHANGELOG.md              # format Keep a Changelog, version anglaise (+ CHANGELOG.fr.md)
 ├── CONTRIBUTING.md            # signaler un bug, ajouter un format, style de code (+ CONTRIBUTING.fr.md)
+├── CODE_OF_CONDUCT.md         # code de conduite, Contributor Covenant 3.0 (+ CODE_OF_CONDUCT.fr.md)
 ├── build-deb.sh                 # empaquetage .deb (fpm)
 ├── build-rpm.sh                   # empaquetage .rpm (fpm)
 ├── release.sh                       # publication de la release GitHub
@@ -388,6 +389,10 @@ nautilus-convert-images/
 ## License
 
 GPL-3.0-only. Voir [LICENSE](LICENSE).
+
+Le code de conduite ([CODE_OF_CONDUCT.fr.md](CODE_OF_CONDUCT.fr.md)) est le
+_Contributor Covenant_ 3.0, adapté pour ce projet ; il est distribué sous sa
+propre licence, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.fr).
 
 nautilus-convert-images est développé par Gilles MAGNEVILLE. Gilles n'est
 pas développeur professionnel — ce projet a été construit avec l'aide de

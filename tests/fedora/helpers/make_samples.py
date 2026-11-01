@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Crée dans un dossier trois fichiers d'essai, sans aucune dépendance :
-un PNG et un BMP valides, et un faux RAW (qui doit produire une erreur)."""
+"""Creates three test files in a folder, with no dependency:
+a valid PNG and BMP, and a fake RAW (which must produce an error)."""
 
 import os
 import struct
@@ -51,7 +51,7 @@ def main():
     bmp(os.path.join(folder, "b.bmp"))
     with open(os.path.join(folder, "bad.arw"), "wb") as f:
         f.write(os.urandom(2048))
-    print(f"échantillons créés dans {folder}: {sorted(os.listdir(folder))}")
+    print(f"samples created in {folder}: {sorted(os.listdir(folder))}")
 
 
 if __name__ == "__main__":

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Charge l'extension Nautilus INSTALLÉE avec les vraies liaisons Python de
-Nautilus (paquet nautilus-python de la distribution), simule un clic droit sur
-un dossier et vérifie le libellé de l'entrée de menu.
+Loads the INSTALLED Nautilus extension with the real Python bindings of
+Nautilus (the distribution's nautilus-python package), simulates a right click on
+a folder and checks the label of the menu entry.
 
-    check_extension.py <libellé-attendu>
+    check_extension.py <expected-label>
 
-La langue se choisit avec la variable LANGUAGE, définie avant l'appel.
-Variable d'environnement : EXTENSION (défaut : le fichier installé par le paquet).
+The language is chosen with the LANGUAGE variable, set before the call.
+Environment variable: EXTENSION (default: the file installed by the package).
 """
 
 import importlib.util
@@ -24,7 +24,7 @@ EXTENSION = os.environ.get(
 
 
 class FakeFileInfo:
-    """Fait office de Nautilus.FileInfo : seule get_location() est utilisée."""
+    """Stands in for Nautilus.FileInfo: only get_location() is used."""
 
     def get_location(self):
         return Gio.File.new_for_path("/tmp")
@@ -38,22 +38,22 @@ def main():
 
     spec = importlib.util.spec_from_file_location("cie_extension", EXTENSION)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)  # échoue ici si les liaisons Nautilus manquent
+    spec.loader.exec_module(module)  # fails here if the Nautilus bindings are missing
 
     provider = module.ConvertImagesMenuProvider()
     items = provider.get_file_items([FakeFileInfo()])
     if len(items) != 1:
-        print(f"{len(items)} entrée(s) de menu au lieu d'une")
+        print(f"{len(items)} menu entry(ies) instead of one")
         return 1
     label = items[0].get_property("label")
     if label != expected:
-        print(f"libellé {label!r} au lieu de {expected!r}")
+        print(f"label {label!r} instead of {expected!r}")
         return 1
     background = provider.get_background_items(FakeFileInfo())
     if len(background) != 1:
-        print(f"clic droit sur le fond d'un dossier : {len(background)} entrée(s) au lieu d'une")
+        print(f"right click on the folder background: {len(background)} entry(ies) instead of one")
         return 1
-    print(f"libellé {label!r}")
+    print(f"label {label!r}")
     return 0
 
 

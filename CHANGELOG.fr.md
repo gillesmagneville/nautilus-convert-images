@@ -16,6 +16,49 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
 
 ## [Non publié]
 
+## 2026-11-01 — v1.3.5
+
+Version de maintenance : aucun changement fonctionnel (le moteur, l'extension
+Nautilus et l'IHM sont identiques à la version précédente). Ce qui change,
+c'est ce qui entoure le programme : un code de conduite, et les scripts de
+construction des paquets et de publication.
+
+### Ajouté
+
+- **Un code de conduite** : `CODE_OF_CONDUCT.md` (anglais, affiché par défaut
+  sur GitHub) et `CODE_OF_CONDUCT.fr.md` (français). C'est le _Contributor
+  Covenant_ 3.0, adapté pour ce projet : une infraction possible se signale
+  au mainteneur, Gilles MAGNEVILLE, à gilles@magneville.fr, qui assure la
+  modération de la communauté. Le `README` et `CONTRIBUTING` y renvoient.
+- **Les paquets `.deb` et `.rpm` l'embarquent**, dans les deux langues, dans
+  `/usr/share/doc/nautilus-convert-images/` ; `release.sh` vérifie qu'il y
+  est avant de publier.
+
+### Modifié
+
+- **Licence déclarée par les paquets** : le _Contributor Covenant_ est
+  distribué par ses auteurs sous CC BY-SA 4.0, et non sous GPL ; le code de
+  conduite garde donc cette licence (`SPDX-License-Identifier:
+  CC-BY-SA-4.0` sur sa première ligne) et les paquets déclarent maintenant
+  `GPL-3.0-only AND CC-BY-SA-4.0`. Le programme reste en GPL-3.0-only.
+- **Scripts de paquets et de publication en anglais** : l'aide, les messages
+  et les commentaires de `build-deb.sh`, `build-rpm.sh`, `release.sh`,
+  `po/update-po.sh`, `packaging/postinst` (le message affiché à
+  l'installation suit toujours la langue du système) et du kit de test Fedora
+  (`tests/fedora/`) sont maintenant en anglais, de même que la description
+  des paquets. Les questions de confirmation sont maintenant `[y/N]` et
+  n'acceptent que `y` ou `Y` (elles acceptaient aussi `o`). Les notes de
+  release restent publiées en anglais d'abord, puis en français.
+
+### Supprimé
+
+- `fix-release-checksums.sh` : un script ponctuel qui remplaçait `SHA256SUMS`
+  par un fichier `.sha256` par paquet sur la release v1.1.0, corrigée depuis.
+- `packaging/build-packages.sh` : un script de construction alternatif qui
+  doublonnait `build-deb.sh` et `build-rpm.sh` et n'installait plus les
+  traductions. Les deux scripts à la racine du dépôt sont la seule façon de
+  construire les paquets.
+
 ## 2026-10-30 — v1.3.4
 
 Version de maintenance : aucun changement fonctionnel (le moteur, l'extension

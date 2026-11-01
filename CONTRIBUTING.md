@@ -7,6 +7,9 @@
 Thank you for your interest in this project! This document explains how to
 report a problem, suggest an improvement, or contribute code.
 
+By taking part in this project, you agree to follow its
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Reporting a bug
 
 Open an issue stating:
@@ -168,8 +171,9 @@ file), and `ARCHITECTURE.md` / `ARCHITECTURE.fr.md` if the technical contract
 changes.
 
 Every document exists in two languages: English (`README.md`,
-`PROJECT_CONTEXT.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`, `CHANGELOG.md`,
-shown by default on GitHub) and French (the same names with `.fr.md`). If you
+`PROJECT_CONTEXT.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`,
+`CODE_OF_CONDUCT.md`, `CHANGELOG.md`, shown by default on GitHub) and
+French (the same names with `.fr.md`). If you
 change one, change the other. If you only write one language, say so in the
 pull request and the maintainer will translate it.
 
@@ -184,4 +188,5 @@ For any question that does not fit the cases above, simply open an issue.
 ## License
 
 By contributing, you agree that your contributions will be released under
-the same license as the project (GPL-3.0-only).
+the same license as the project (GPL-3.0-only). The code of conduct is the
+one exception: it is the Contributor Covenant 3.0, distributed under CC BY-SA 4.0.

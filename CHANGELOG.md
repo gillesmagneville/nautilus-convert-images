@@ -16,6 +16,50 @@ a date rather than a version number.
 
 ## [Unreleased]
 
+## 2026-11-01 — v1.3.5
+
+Maintenance release: no functional change (the engine, the Nautilus
+extension and the GUI are identical to the previous version). What changes
+is what surrounds the program: a code of conduct, and the packaging and
+release scripts.
+
+### Added
+
+- **A code of conduct**: `CODE_OF_CONDUCT.md` (English, shown by default on
+  GitHub) and `CODE_OF_CONDUCT.fr.md` (French). It is the Contributor
+  Covenant 3.0, adapted for this project: a possible violation is reported
+  to the maintainer, Gilles MAGNEVILLE, at gilles@magneville.fr, who acts as
+  the Community Moderator. `README` and `CONTRIBUTING` point to it.
+- **The `.deb` and `.rpm` packages ship it**, in both languages, in
+  `/usr/share/doc/nautilus-convert-images/`; `release.sh` checks that it is
+  there before publishing.
+
+### Changed
+
+- **License declared by the packages**: the Contributor Covenant is
+  distributed by its authors under CC BY-SA 4.0, not under the GPL, so the
+  code of conduct keeps that license (`SPDX-License-Identifier:
+  CC-BY-SA-4.0` on its first line) and the packages now declare
+  `GPL-3.0-only AND CC-BY-SA-4.0`. The program stays GPL-3.0-only.
+- **Packaging and release scripts in English**: the help, the messages and
+  the comments of `build-deb.sh`, `build-rpm.sh`, `release.sh`,
+  `po/update-po.sh`, `packaging/postinst` (the message shown at install time
+  still follows the system language) and the Fedora test kit
+  (`tests/fedora/`) are now in English, and so is the description of the
+  packages. The confirmation prompts are now `[y/N]` and accept only `y` or
+  `Y` (they used to accept `o` as well). The release notes are still
+  published in English first, then in French.
+
+### Removed
+
+- `fix-release-checksums.sh`: a one-off script that replaced `SHA256SUMS` by
+  one `.sha256` file per package on the v1.1.0 release, which has been
+  corrected since.
+- `packaging/build-packages.sh`: an alternative packaging script that
+  duplicated `build-deb.sh` and `build-rpm.sh` and no longer installed the
+  translations. The two scripts at the root of the repository are the only
+  way to build the packages.
+
 ## 2026-10-30 — v1.3.4
 
 Maintenance release: no functional change (the engine, the Nautilus

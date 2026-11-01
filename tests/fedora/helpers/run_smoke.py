@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Lance l'interface INSTALLÉE (celle du paquet) sous Xvfb avec le moteur installé,
-dans une langue donnée, et vérifie ce que l'utilisateur aurait vu.
+Launches the INSTALLED GUI (the one from the package) under Xvfb with the installed engine,
+in a given language, and checks what the user would have seen.
 
-    run_smoke.py <langue> <dossier-d-échantillons>
+    run_smoke.py <language> <samples-folder>
 
-Variables d'environnement (pour tester hors paquet) :
-    GUI_BIN     interface à lancer           (défaut : /usr/bin/convert-images-gui)
-    GUI_SMOKE   test de fumée de l'interface (défaut : tests/gui_smoke.py du dépôt)
-    CONVERT_IMAGES_ENGINE / CONVERT_IMAGES_LOCALEDIR : transmises telles quelles.
+Environment variables (to test outside a package):
+    GUI_BIN     GUI to launch                (default: /usr/bin/convert-images-gui)
+    GUI_SMOKE   smoke test of the GUI        (default: the repository's tests/gui_smoke.py)
+    CONVERT_IMAGES_ENGINE / CONVERT_IMAGES_LOCALEDIR: passed through unchanged.
 
-Code de sortie : 0 si tout est conforme, 1 sinon.
+Exit code: 0 if everything is compliant, 1 otherwise.
 """
 
 import json
@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 GUI_BIN = os.environ.get("GUI_BIN", "/usr/bin/convert-images-gui")
 GUI_SMOKE = Path(os.environ.get("GUI_SMOKE", HERE.parent.parent / "gui_smoke.py"))  # tests/gui_smoke.py
 
-# (titre de la fenêtre, bouton Convertir, étiquette d'erreur, mot de fin)
+# (window title, Convert button, error label, end word)
 EXPECTED = {
     "en": ("Convert images", "Convert", "[ERROR]", "Finished"),
     "fr": ("Convertir les images", "Convertir", "[ERREUR]", "Terminé"),
@@ -42,8 +42,8 @@ def main():
     language, samples = sys.argv[1], sys.argv[2]
     title, convert, error_tag, finished = EXPECTED[language]
 
-    # gui_smoke.py cherche l'interface à <racine>/nautilus-extension/convert-images-gui :
-    # on fabrique une racine temporaire dont ce chemin pointe vers l'interface installée.
+    # gui_smoke.py looks for the GUI at <root>/nautilus-extension/convert-images-gui:
+    # a temporary root is built whose path points to the installed GUI.
     with tempfile.TemporaryDirectory(prefix="cie-fedora-") as root:
         (Path(root) / "nautilus-extension").mkdir()
         (Path(root) / "tests").mkdir()
@@ -57,38 +57,38 @@ def main():
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=120)
         except subprocess.TimeoutExpired:
-            print(f"  [ÉCHEC] {language} : délai dépassé (120 s)")
+            print(f"  [FAIL]  {language}: timeout (120 s)")
             return 1
 
     lines = [ln for ln in r.stdout.splitlines() if ln.strip().startswith("{")]
     if not lines:
-        print(f"  [ÉCHEC] {language} : aucun résultat de l'interface")
-        print("      sortie standard :", r.stdout.strip()[-600:])
-        print("      erreurs :", r.stderr.strip()[-1200:])
+        print(f"  [FAIL]  {language}: no result from the GUI")
+        print("      standard output:", r.stdout.strip()[-600:])
+        print("      errors:", r.stderr.strip()[-1200:])
         return 1
     res = json.loads(lines[-1])
 
     problems = []
     if res.get("stage") != "converted":
-        problems.append(f"étape atteinte : {res.get('stage')!r} au lieu de 'converted'")
+        problems.append(f"stage reached: {res.get('stage')!r} instead of 'converted'")
     if res.get("title") != title:
-        problems.append(f"titre {res.get('title')!r} au lieu de {title!r}")
+        problems.append(f"title {res.get('title')!r} instead of {title!r}")
     if res.get("convert_button") != convert:
-        problems.append(f"bouton {res.get('convert_button')!r} au lieu de {convert!r}")
+        problems.append(f"button {res.get('convert_button')!r} instead of {convert!r}")
     log = res.get("log", "")
     if "[OK]" not in log:
-        problems.append("aucune conversion réussie dans le journal")
+        problems.append("no successful conversion in the log")
     if error_tag not in log:
-        problems.append(f"étiquette d'erreur {error_tag!r} absente (le faux RAW doit échouer)")
+        problems.append(f"error label {error_tag!r} missing (the fake RAW must fail)")
     if finished not in log:
-        problems.append(f"mot de fin {finished!r} absent du journal")
+        problems.append(f"end word {finished!r} missing from the log")
 
     if problems:
-        print(f"  [ÉCHEC] {language} : " + " ; ".join(problems))
-        print("      journal vu par l'utilisateur :")
+        print(f"  [FAIL]  {language}: " + " ; ".join(problems))
+        print("      log seen by the user:")
         print("      " + log.replace("\n", "\n      "))
         return 1
-    print(f"  [OK]    {language} : « {title} », conversion réussie, erreur du faux RAW traduite, journal complet")
+    print(f"  [OK]    {language}: {title!r}, conversion succeeded, error of the fake RAW translated, complete log")
     return 0
 
 

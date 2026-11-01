@@ -1,18 +1,18 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Teste un paquet .rpm dans un vrai Fedora (conteneur), depuis votre machine :
-# installation avec dnf (dépendances résolues par Fedora), contenu du paquet,
-# moteur, GTK 4, extension Nautilus avec les vraies liaisons nautilus-python,
-# interface complète sous Xvfb dans les 4 langues, puis désinstallation.
+# Tests a .rpm package in a real Fedora (container), from your machine:
+# installation with dnf (dependencies resolved by Fedora), package contents,
+# engine, GTK 4, Nautilus extension with the real nautilus-python bindings,
+# full GUI under Xvfb in the 4 languages, then uninstallation.
 #
-#   tests/fedora/test-fedora.sh [fichier.rpm] [version-de-Fedora]
+#   tests/fedora/test-fedora.sh [file.rpm] [fedora-version]
 #
-# Sans fichier .rpm, le script prend celui de la racine du dépôt (il doit n'y
-# en avoir qu'un). La version de Fedora est « latest » par défaut ; exemples :
-# 43, 44. Il faut podman (de préférence) ou docker : sudo apt install podman
+# Without a .rpm file, the script takes the one at the root of the repository
+# (there must be only one). The Fedora version is "latest" by default;
+# examples: 43, 44. podman (preferably) or docker is required: sudo apt install podman
 #
-# À lancer AVANT de publier une release, sur le .rpm qui va être publié.
+# Run it BEFORE publishing a release, on the .rpm that is going to be published.
 
 set -u
 
@@ -30,20 +30,20 @@ if [ -z "$RPM" ]; then
     if [ "${#found[@]}" -eq 1 ]; then
         RPM="${found[0]}"
     else
-        echo "Usage : $0 [fichier.rpm] [version-de-Fedora]" >&2
-        echo "${#found[@]} fichier(s) .rpm à la racine du dépôt : précisez lequel en argument." >&2
+        echo "Usage: $0 [file.rpm] [fedora-version]" >&2
+        echo "${#found[@]} .rpm file(s) at the root of the repository: say which one as an argument." >&2
         exit 2
     fi
 fi
 
 if [ ! -f "$RPM" ]; then
-    echo "Fichier introuvable : '${RPM}'" >&2
+    echo "File not found: '${RPM}'" >&2
     exit 2
 fi
 
 RUNTIME="$(command -v podman || command -v docker || true)"
 if [ -z "$RUNTIME" ]; then
-    echo "Ni podman ni docker n'est installé. Installez podman avec :" >&2
+    echo "Neither podman nor docker is installed. Install podman with:" >&2
     echo "    sudo apt install podman" >&2
     exit 2
 fi
@@ -52,11 +52,11 @@ RPM_DIR="$(cd "$(dirname "$RPM")" && pwd)"
 RPM_NAME="$(basename "$RPM")"
 IMAGE="registry.fedoraproject.org/fedora:${VERSION}"
 
-echo "Moteur de conteneurs : $RUNTIME"
-echo "Image                : $IMAGE (téléchargée la première fois, environ 60 Mo)"
-echo "Paquet               : $RPM_DIR/$RPM_NAME"
-echo "Le dossier du paquet et le dossier tests/ sont montés en LECTURE SEULE dans le conteneur ;"
-echo "le conteneur est supprimé à la fin. Rien n'est installé sur votre machine."
+echo "Container engine : $RUNTIME"
+echo "Image            : $IMAGE (downloaded the first time, about 60 MB)"
+echo "Package          : $RPM_DIR/$RPM_NAME"
+echo "The package folder and the tests/ folder are mounted READ-ONLY in the container;"
+echo "the container is deleted at the end. Nothing is installed on your machine."
 echo
 
 "$RUNTIME" run --rm \
