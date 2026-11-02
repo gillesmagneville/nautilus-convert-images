@@ -58,6 +58,7 @@ nautilus-convert-images/
 ├── ARCHITECTURE.md                # version anglaise ; + ARCHITECTURE.fr.md (ce document)
 ├── CONTRIBUTING.md                # version anglaise ; + CONTRIBUTING.fr.md
 ├── CODE_OF_CONDUCT.md             # version anglaise ; + CODE_OF_CONDUCT.fr.md
+├── SECURITY.md                    # version anglaise ; + SECURITY.fr.md
 ├── CHANGELOG.md                   # version anglaise ; + CHANGELOG.fr.md
 ├── LICENSE
 │

@@ -343,6 +343,7 @@ nautilus-convert-images/
 ├── CHANGELOG.md              # format Keep a Changelog, version anglaise (+ CHANGELOG.fr.md)
 ├── CONTRIBUTING.md            # signaler un bug, ajouter un format, style de code (+ CONTRIBUTING.fr.md)
 ├── CODE_OF_CONDUCT.md         # code de conduite, Contributor Covenant 3.0 (+ CODE_OF_CONDUCT.fr.md)
+├── SECURITY.md                # politique de sécurité : signaler une vulnérabilité (+ SECURITY.fr.md)
 ├── build-deb.sh                 # empaquetage .deb (fpm)
 ├── build-rpm.sh                   # empaquetage .rpm (fpm)
 ├── release.sh                       # publication de la release GitHub
@@ -385,6 +386,10 @@ nautilus-convert-images/
     ├── nautilus-convert-images.desktop
     └── postinst                        # redémarre Nautilus après installation (message en en/fr/es/de)
 ```
+
+## Sécurité
+
+Pour signaler une vulnérabilité, merci de ne pas ouvrir d'issue publique : suivez la [Politique de sécurité](SECURITY.fr.md).
 
 ## License
 

@@ -18,7 +18,7 @@ that's all.
 > and German** (see [Languages](#languages)). The other documents
 > (`PROJECT_CONTEXT.md` for the vision and principles, `ARCHITECTURE.md`
 > for the technical contract, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
-> `CHANGELOG.md`) exist in
+> `SECURITY.md`, `CHANGELOG.md`) exist in
 > **English and French**: each one has a link to switch language at the top,
 > and the French files end in `.fr.md`.
 
@@ -340,6 +340,7 @@ nautilus-convert-images/
 ├── CHANGELOG.md              # Keep a Changelog format (+ CHANGELOG.fr.md)
 ├── CONTRIBUTING.md            # reporting a bug, adding a format, code style (+ CONTRIBUTING.fr.md)
 ├── CODE_OF_CONDUCT.md         # code of conduct, Contributor Covenant 3.0 (+ CODE_OF_CONDUCT.fr.md)
+├── SECURITY.md                # security policy: reporting a vulnerability (+ SECURITY.fr.md)
 ├── build-deb.sh                 # .deb packaging (fpm)
 ├── build-rpm.sh                   # .rpm packaging (fpm)
 ├── release.sh                       # GitHub release publishing
@@ -382,6 +383,10 @@ nautilus-convert-images/
     ├── nautilus-convert-images.desktop
     └── postinst                        # restarts Nautilus after installation (message in en/fr/es/de)
 ```
+
+## Security
+
+To report a vulnerability, please do not open a public issue: follow the [Security Policy](SECURITY.md).
 
 ## License
 

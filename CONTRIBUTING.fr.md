@@ -10,6 +10,9 @@ signaler un problème, proposer une amélioration, ou contribuer du code.
 En participant à ce projet, vous vous engagez à respecter son
 [Code de conduite](CODE_OF_CONDUCT.fr.md).
 
+Pour signaler un **problème de sécurité**, merci de ne pas ouvrir d'issue
+publique : suivez la [Politique de sécurité](SECURITY.fr.md).
+
 ## Signaler un bug
 
 Ouvrez une issue en précisant :
@@ -174,7 +177,7 @@ sous `[Unreleased]` (`[Non publié]` dans le fichier français), et
 
 Chaque document existe en deux langues : l'anglais (`README.md`,
 `PROJECT_CONTEXT.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`,
-`CODE_OF_CONDUCT.md`, `CHANGELOG.md`, affiché par défaut sur GitHub) et le
+`CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`, affiché par défaut sur GitHub) et le
 français (les mêmes noms avec
 `.fr.md`). Si vous modifiez l'un, modifiez aussi l'autre. Si vous n'écrivez
 que dans une langue, dites-le dans la pull request : le mainteneur traduira.

@@ -16,6 +16,14 @@ a date rather than a version number.
 
 ## [Unreleased]
 
+### Added
+
+- **A security policy**: `SECURITY.md` (English, shown by default on GitHub) and
+  `SECURITY.fr.md` (French). It explains how to report a vulnerability
+  privately (GitHub private vulnerability reporting, or email), which versions
+  receive fixes and what to expect. It is a file of the repository: the
+  packages do not ship it. `README`, `CONTRIBUTING` and `ARCHITECTURE` point to it.
+
 ## 2026-11-01 — v1.3.5
 
 Maintenance release: no functional change (the engine, the Nautilus
