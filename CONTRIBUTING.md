@@ -10,6 +10,9 @@ report a problem, suggest an improvement, or contribute code.
 By taking part in this project, you agree to follow its
 [Code of Conduct](CODE_OF_CONDUCT.md).
 
+To report a **security problem**, please do not open a public issue: follow
+the [Security Policy](SECURITY.md).
+
 ## Reporting a bug
 
 Open an issue stating:
@@ -172,7 +175,7 @@ changes.
 
 Every document exists in two languages: English (`README.md`,
 `PROJECT_CONTEXT.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md`,
-`CODE_OF_CONDUCT.md`, `CHANGELOG.md`, shown by default on GitHub) and
+`CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`, shown by default on GitHub) and
 French (the same names with `.fr.md`). If you
 change one, change the other. If you only write one language, say so in the
 pull request and the maintainer will translate it.
