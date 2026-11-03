@@ -1,16 +1,16 @@
 """
-Extension Nautilus pour nautilus-convert-images.
+Nautilus extension for nautilus-convert-images.
 
-Ajoute une entrée « Convertir les images… » dans le menu contextuel de
-Nautilus, sur une sélection de fichiers/dossiers ou sur le fond d'un
-dossier. L'extension ne fait que collecter les chemins sélectionnés et
-lancer l'interface graphique autonome (convert-images-gui) : toute la
-détection de format et la conversion proprement dite se font dans ce
-process séparé, pour ne jamais bloquer ni faire planter Nautilus.
+Adds a "Convert images…" entry to the Nautilus context menu, on a
+selection of files/folders or on the background of a folder. The
+extension only collects the selected paths and launches the standalone
+graphical interface (convert-images-gui): all the format detection and
+the conversion proper happen in this separate process, so as to never
+block or crash Nautilus.
 
-Installation : ce fichier doit se trouver sous
-/usr/share/nautilus-python/extensions/ (et non ~/.local/... ni
-/usr/local/..., pour rester visible depuis le bac à sable de Nautilus).
+Installation: this file must be located under
+/usr/share/nautilus-python/extensions/ (and not ~/.local/... nor
+/usr/local/..., to stay visible from Nautilus' sandbox).
 """
 
 import gettext
@@ -20,33 +20,32 @@ import tempfile
 
 import gi
 
-# Volontairement PAS de gi.require_version("Nautilus", ...) : au moment où
-# ce fichier s'exécute, le processus Nautilus hôte a déjà chargé le
-# typelib Nautilus correspondant à sa propre version (4.0, 4.1, ...).
-# Figer une version précise ici échoue selon la machine : soit elle ne
-# correspond pas à celle déjà chargée par Nautilus lui-même
-# ("already loaded with version X"), soit elle n'est simplement pas
-# installée sur ce système ("not available for version X"). GObject n'a
-# en revanche qu'une seule version d'introspection possible (2.0) : la
-# figer ne pose aucun risque de conflit.
+# Deliberately NO gi.require_version("Nautilus", ...): by the time this file
+# runs, the host Nautilus process has already loaded the Nautilus typelib
+# matching its own version (4.0, 4.1, ...). Pinning a precise version here
+# fails depending on the machine: either it does not match the one already
+# loaded by Nautilus itself ("already loaded with version X"), or it is
+# simply not installed on this system ("not available for version X").
+# GObject, on the other hand, has only one possible introspection version
+# (2.0): pinning it poses no risk of conflict.
 gi.require_version("GObject", "2.0")
 
 from gi.repository import GObject, Nautilus  # noqa: E402
 
 GUI_BINARY = "/usr/bin/convert-images-gui"
 
-# Internationalisation (gettext) : textes sources en anglais, langue choisie
-# d'après l'environnement de Nautilus (LANGUAGE, LC_ALL, LC_MESSAGES, LANG),
-# anglais si aucune traduction n'existe. Même domaine que l'interface.
+# Internationalization (gettext): source texts in English, language chosen
+# from Nautilus' environment (LANGUAGE, LC_ALL, LC_MESSAGES, LANG),
+# English if no translation exists. Same domain as the interface.
 I18N_DOMAIN = "nautilus-convert-images"
 LOCALE_DIR = os.environ.get("CONVERT_IMAGES_LOCALEDIR", "/usr/share/locale")
 _ = gettext.translation(I18N_DOMAIN, localedir=LOCALE_DIR, fallback=True).gettext
 
 
 def _write_path_list(paths):
-    """Écrit la liste de chemins dans un fichier temporaire (un par ligne)
-    afin d'éviter toute limite de longueur de ligne de commande lors d'une
-    sélection très large."""
+    """Writes the list of paths to a temporary file (one per line)
+    to avoid any command-line length limit with a very large
+    selection."""
     fd = tempfile.NamedTemporaryFile(
         mode="w", suffix=".convert-images-selection.txt", delete=False
     )
@@ -69,8 +68,8 @@ def _launch_gui(paths):
 
 
 def _local_path(file_info):
-    """Renvoie le chemin local d'un Nautilus.FileInfo, ou None s'il ne
-    s'agit pas d'un fichier local (ex. emplacement distant non monté)."""
+    """Returns the local path of a Nautilus.FileInfo, or None if it is
+    not a local file (e.g. a remote location that is not mounted)."""
     location = file_info.get_location()
     if location is None:
         return None
@@ -91,15 +90,15 @@ class ConvertImagesMenuProvider(GObject.GObject, Nautilus.MenuProvider):
         return item
 
     def get_file_items(self, files):
-        # `files` : sélection de fichiers et/ou dossiers.
+        # `files`: selection of files and/or folders.
         paths = [p for p in (_local_path(f) for f in files) if p]
         if not paths:
             return []
         return [self._make_item(paths)]
 
     def get_background_items(self, current_folder):
-        # Clic droit sur le fond d'un dossier (rien de sélectionné) :
-        # propose de convertir les images du dossier courant.
+        # Right click on the background of a folder (nothing selected):
+        # offers to convert the images of the current folder.
         path = _local_path(current_folder)
         if not path:
             return []

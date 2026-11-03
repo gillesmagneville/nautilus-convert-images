@@ -17,7 +17,7 @@ image = { version = "0.24", default-features = false, features = ["jpeg", "png",
 imagepipe = "=0.5.0"
 infer = "0.22.0"
 rawloader = "0.37.2"
-# LibRaw embarquée (repli quand rawloader ne connaît pas le boîtier), voir vendor/README.md
+# Bundled LibRaw (fallback when rawloader does not know the camera), see vendor/README.md
 rsraw-sys = { path = "vendor/libraw-sys" }
 rayon = "=1.10.0"
 serde = { version = "1.0.229", features = ["derive"] }

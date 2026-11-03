@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Test de fumée de l'interface graphique réelle (GTK4), sans intervention :
-ouvre la fenêtre, attend la fin de la détection, lance une vraie conversion
-avec le moteur, puis imprime en JSON ce que l'utilisateur aurait vu
-(titre, libellés, journal).
+Smoke test of the real graphical interface (GTK4), unattended: opens the
+window, waits for the detection to finish, runs a real conversion with the
+engine, then prints as JSON what the user would have seen (title, labels,
+log).
 
-Il faut un écran : dans un environnement sans session graphique, lancer via
+A display is needed: in an environment without a graphical session, run via
 
-    xvfb-run -a -s "-screen 0 1280x900x24" python3 tests/gui_smoke.py <dossier-d-images>
+    xvfb-run -a -s "-screen 0 1280x900x24" python3 tests/gui_smoke.py <images-folder>
 
-Variables d'environnement utiles (réservées au développement et aux tests) :
-    CONVERT_IMAGES_ENGINE     chemin du binaire convert-images-engine
-    CONVERT_IMAGES_LOCALEDIR  dossier de catalogues compilés (.mo)
-    LANGUAGE                  langue à tester (fr, es, de, en…)
-    GUI_SMOKE_SHOTS           si défini : dossier où enregistrer des captures
-                              d'écran (nécessite ImageMagick « import »)
+Useful environment variables (reserved for development and tests):
+    CONVERT_IMAGES_ENGINE     path of the convert-images-engine binary
+    CONVERT_IMAGES_LOCALEDIR  folder of compiled catalogs (.mo)
+    LANGUAGE                  language to test (fr, es, de, en…)
+    GUI_SMOKE_SHOTS           if set: folder where screenshots are saved
+                              (needs ImageMagick "import")
 """
 
 import importlib.machinery

@@ -1,21 +1,21 @@
-//! Détection du format des fichiers image : formats standards (JPEG, PNG,
-//! TIFF, BMP, GIF, WebP) et formats RAW (CR2, NEF, ARW, DNG, ORF, RAF, RW2,
+//! Detection of the format of image files: standard formats (JPEG, PNG,
+//! TIFF, BMP, GIF, WebP) and RAW formats (CR2, NEF, ARW, DNG, ORF, RAF, RW2,
 //! PEF, SRW, X3F, etc.).
 //!
-//! Stratégie en deux temps :
-//! 1. L'extension du fichier est comparée à une table connue (rapide, et
-//!    lève l'ambiguïté entre TIFF classique et les nombreux formats RAW qui
-//!    sont eux-mêmes des conteneurs TIFF au niveau des octets magiques).
-//! 2. Si l'extension est inconnue ou absente, on retombe sur une détection
-//!    par contenu (octets magiques via `infer`, puis tentative de décodage
-//!    RAW en dernier recours).
+//! Two-step strategy:
+//! 1. The file extension is compared with a known table (fast, and
+//!    resolves the ambiguity between classic TIFF and the many RAW formats
+//!    that are themselves TIFF containers at the magic-bytes level).
+//! 2. If the extension is unknown or missing, we fall back on detection
+//!    by content (magic bytes via `infer`, then a RAW decoding attempt as
+//!    a last resort).
 
 use std::path::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DetectedFormat {
     Standard(StandardFormat),
-    Raw(String), // étiquette lisible, ex. "RAW Canon (CR2)"
+    Raw(String), // readable label, e.g. "RAW Canon (CR2)"
     Unknown,
 }
 
@@ -56,9 +56,9 @@ impl DetectedFormat {
     }
 }
 
-/// Table des extensions RAW connues -> étiquette lisible.
-/// Liste volontairement large : le succès réel du décodage dépend de
-/// rawloader, mais l'étiquette de détection ne dépend que de l'extension.
+/// Table of known RAW extensions -> readable label.
+/// Deliberately broad list: the real success of decoding depends on
+/// rawloader, but the detection label depends only on the extension.
 fn raw_extension_label(ext: &str) -> Option<&'static str> {
     Some(match ext {
         "cr2" => "RAW Canon (CR2)",
@@ -104,9 +104,9 @@ fn standard_extension(ext: &str) -> Option<StandardFormat> {
     })
 }
 
-/// Extensions à considérer lors du parcours récursif d'un dossier
-/// (standards + RAW). Utilisé pour filtrer rapidement sans ouvrir chaque
-/// fichier.
+/// Extensions to consider when walking a folder recursively
+/// (standard + RAW). Used to filter quickly without opening each
+/// file.
 pub fn has_known_image_extension(path: &Path) -> bool {
     match path.extension().and_then(|e| e.to_str()) {
         Some(ext) => {
@@ -117,7 +117,7 @@ pub fn has_known_image_extension(path: &Path) -> bool {
     }
 }
 
-/// Détecte le format d'un fichier image, par extension puis par contenu.
+/// Detects the format of an image file, by extension then by content.
 pub fn detect(path: &Path) -> DetectedFormat {
     if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
         let ext = ext.to_lowercase();
@@ -129,13 +129,13 @@ pub fn detect(path: &Path) -> DetectedFormat {
         }
     }
 
-    // Extension inconnue ou absente : on retombe sur le contenu.
+    // Unknown or missing extension: fall back on the content.
     if let Ok(Some(kind)) = infer::get_from_path(path) {
         let mime = kind.mime_type();
         let std_fmt = match mime {
             "image/jpeg" => Some(StandardFormat::Jpeg),
             "image/png" => Some(StandardFormat::Png),
-            "image/tiff" => None, // ambigu : peut être un RAW basé sur TIFF
+            "image/tiff" => None, // ambiguous: may be a TIFF-based RAW
             "image/bmp" => Some(StandardFormat::Bmp),
             "image/gif" => Some(StandardFormat::Gif),
             "image/webp" => Some(StandardFormat::WebP),
@@ -146,8 +146,8 @@ pub fn detect(path: &Path) -> DetectedFormat {
         }
     }
 
-    // Dernier recours : on tente un décodage RAW réel. rawloader sait lire
-    // les métadonnées internes (marque/modèle) même sans extension fiable.
+    // Last resort: try a real RAW decode. rawloader can read the internal
+    // metadata (make/model) even without a reliable extension.
     if let Ok(raw) = rawloader::decode_file(path) {
         let label = format!("RAW ({} {})", raw.make.trim(), raw.model.trim());
         return DetectedFormat::Raw(label);

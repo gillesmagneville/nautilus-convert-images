@@ -1,11 +1,11 @@
-//! Décodage RAW de secours via LibRaw (embarquée statiquement dans
-//! `vendor/libraw-sys`, aucune bibliothèque système requise).
+//! Fallback RAW decoding through LibRaw (statically embedded in
+//! `vendor/libraw-sys`, no system library required).
 //!
-//! Utilisé par `raw.rs` uniquement quand `rawloader`/`imagepipe` échouent —
-//! typiquement pour un boîtier absent de la base de `rawloader`. Même
-//! contrat que le décodage principal : pleine résolution, aucun
-//! recadrage ni redimensionnement (`half_size` reste à 0), balance des
-//! blancs enregistrée par l'appareil, espace de sortie sRGB.
+//! Used by `raw.rs` only when `rawloader`/`imagepipe` fail — typically for
+//! a camera missing from the `rawloader` database. Same contract as the
+//! main decoding: full resolution, no cropping or resizing (`half_size`
+//! stays at 0), white balance as recorded by the camera, sRGB output
+//! space.
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_int;
@@ -16,28 +16,28 @@ use rsraw_sys as ffi;
 
 use crate::raw::{DecodedRaw16, DecodedRaw8};
 
-/// Instance LibRaw, libérée à la sortie quoi qu'il arrive.
+/// LibRaw instance, released on exit no matter what.
 struct Handle(*mut ffi::libraw_data_t);
 
 impl Drop for Handle {
     fn drop(&mut self) {
-        // SAFETY: le pointeur vient de `libraw_init` et n'est libéré qu'ici.
+        // SAFETY: the pointer comes from `libraw_init` and is released only here.
         unsafe { ffi::libraw_close(self.0) }
     }
 }
 
-/// Image développée en mémoire par LibRaw, libérée à la sortie.
+/// Image developed in memory by LibRaw, released on exit.
 struct Processed(*mut ffi::libraw_processed_image_t);
 
 impl Drop for Processed {
     fn drop(&mut self) {
-        // SAFETY: le pointeur vient de `libraw_dcraw_make_mem_image`.
+        // SAFETY: the pointer comes from `libraw_dcraw_make_mem_image`.
         unsafe { ffi::libraw_dcraw_clear_mem(self.0) }
     }
 }
 
 fn libraw_error(code: c_int) -> String {
-    // SAFETY: `libraw_strerror` renvoie un pointeur vers une chaîne statique.
+    // SAFETY: `libraw_strerror` returns a pointer to a static string.
     unsafe {
         CStr::from_ptr(ffi::libraw_strerror(code))
             .to_string_lossy()
@@ -45,14 +45,14 @@ fn libraw_error(code: c_int) -> String {
     }
 }
 
-/// Développe `path` avec LibRaw en RGB `bits` bits par canal (8 ou 16).
-/// Renvoie (largeur, hauteur, octets bruts en ordre natif).
+/// Develops `path` with LibRaw into RGB with `bits` bits per channel (8 or 16).
+/// Returns (width, height, raw bytes in native order).
 fn develop(path: &Path, bits: u16) -> Result<(u32, u32, Vec<u8>), String> {
     let c_path = CString::new(path.as_os_str().as_bytes())
         .map_err(|_| "invalid path (null byte)".to_string())?;
 
-    // SAFETY: appels FFI sur une instance LibRaw privée à ce thread ; tous
-    // les pointeurs sont vérifiés avant usage et libérés par les gardes.
+    // SAFETY: FFI calls on a LibRaw instance private to this thread; all
+    // pointers are checked before use and released by the guards.
     unsafe {
         let raw = ffi::libraw_init(0);
         if raw.is_null() {
@@ -64,11 +64,11 @@ fn develop(path: &Path, bits: u16) -> Result<(u32, u32, Vec<u8>), String> {
             let p = &mut (*handle.0).params;
             p.output_bps = bits as c_int;
             p.output_color = 1; // sRGB
-            p.use_camera_wb = 1; // balance des blancs de l'appareil
-            p.no_auto_bright = 1; // pas de correction de luminosité automatique
-            p.gamm[0] = 1.0 / 2.4; // courbe sRGB (comme le pipeline principal)
+            p.use_camera_wb = 1; // camera white balance
+            p.no_auto_bright = 1; // no automatic brightness correction
+            p.gamm[0] = 1.0 / 2.4; // sRGB curve (like the main pipeline)
             p.gamm[1] = 12.92;
-            p.half_size = 0; // jamais de réduction de résolution
+            p.half_size = 0; // never reduce the resolution
         }
 
         let rc = ffi::libraw_open_file(handle.0, c_path.as_ptr());
@@ -140,8 +140,8 @@ mod tests {
     const H: u32 = 48;
     const RAW_VALUE: u16 = 20000;
 
-    /// DNG minimal non compressé : 64x48, 16 bits, mosaïque RGGB, valeur
-    /// uniforme, matrice couleur identité, balance des blancs neutre.
+    /// Minimal uncompressed DNG: 64x48, 16 bits, RGGB mosaic, uniform
+    /// value, identity color matrix, neutral white balance.
     fn synthetic_dng() -> Vec<u8> {
         const SHORT: u16 = 3;
         const LONG: u16 = 4;
@@ -230,28 +230,28 @@ mod tests {
     #[test]
     fn decodes_full_resolution_8bit_neutral_and_not_black() {
         let (dir, f) = write_dng("8");
-        let d = decode_8bit(&f).expect("LibRaw doit décoder le DNG synthétique");
-        // Pleine résolution : ni recadrage ni réduction.
+        let d = decode_8bit(&f).expect("LibRaw must decode the synthetic DNG");
+        // Full resolution: neither cropping nor reduction.
         assert_eq!((d.width, d.height), (W, H));
         assert_eq!(d.rgb.len(), (W * H * 3) as usize);
-        // Gris neutre (R≈G≈B) et ni noir ni saturé au centre de l'image.
+        // Neutral gray (R≈G≈B), neither black nor saturated at the center of the image.
         let i = ((H / 2 * W + W / 2) * 3) as usize;
         let (r, g, b) = (d.rgb[i] as i32, d.rgb[i + 1] as i32, d.rgb[i + 2] as i32);
-        assert!((r - g).abs() <= 3 && (g - b).abs() <= 3, "pas neutre : {r},{g},{b}");
-        assert!((60..=250).contains(&g), "valeur hors plage : {g}");
+        assert!((r - g).abs() <= 3 && (g - b).abs() <= 3, "not neutral: {r},{g},{b}");
+        assert!((60..=250).contains(&g), "value out of range: {g}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
     fn decodes_full_resolution_16bit() {
         let (dir, f) = write_dng("16");
-        let d = decode_16bit(&f).expect("LibRaw doit décoder le DNG synthétique");
+        let d = decode_16bit(&f).expect("LibRaw must decode the synthetic DNG");
         assert_eq!((d.width, d.height), (W, H));
         assert_eq!(d.rgb.len(), (W * H * 3) as usize);
         let i = ((H / 2 * W + W / 2) * 3) as usize;
         let g = d.rgb[i + 1] as i32;
-        // 16 bits réels : bien au-delà de la plage 0..=255.
-        assert!(g > 1000, "valeur 16 bits suspecte : {g}");
+        // Real 16 bits: well beyond the 0..=255 range.
+        assert!(g > 1000, "suspicious 16-bit value: {g}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -268,7 +268,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("cie-libraw-bad-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let f = dir.join("bad.arw");
-        std::fs::write(&f, b"pas un RAW").unwrap();
+        std::fs::write(&f, b"not a RAW").unwrap();
         let msg = decode_8bit(&f).unwrap_err();
         assert!(msg.starts_with("LibRaw:"), "{msg}");
         let _ = std::fs::remove_dir_all(&dir);

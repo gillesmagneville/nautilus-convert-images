@@ -1,9 +1,8 @@
-//! Cœur de la conversion : charge l'image source (formats standards via
-//! `image`, formats RAW via le module `raw`) puis l'encode vers le format
-//! cible choisi, sans jamais recadrer ni redimensionner, et en conservant
-//! la meilleure fidélité possible compte tenu des contraintes propres à
-//! chaque format de sortie (JPEG reste par nature un format avec perte ;
-//! PNG, TIFF, BMP et WebP (mode sans perte) sont eux authentiquement
+//! Core of the conversion: loads the source image (standard formats through
+//! `image`, RAW formats through the `raw` module) then encodes it to the
+//! chosen target format, never cropping or resizing, and keeping the best
+//! possible fidelity given the constraints of each output format (JPEG is
+//! lossy by nature; PNG, TIFF, BMP and WebP (lossless mode) are truly
 //! lossless).
 
 use image::{DynamicImage, ImageBuffer, ImageOutputFormat, Rgb};
@@ -33,7 +32,7 @@ impl TargetFormat {
         }
     }
 
-    /// Formats réellement sans perte au sens strict.
+    /// Formats that are really lossless in the strict sense.
     pub fn is_lossless(&self) -> bool {
         !matches!(self, TargetFormat::Jpeg)
     }
@@ -42,17 +41,17 @@ impl TargetFormat {
 #[derive(Debug, Clone)]
 pub struct ConvertOptions {
     pub target: TargetFormat,
-    /// Qualité JPEG (1-100). Ignoré pour les autres formats.
+    /// JPEG quality (1-100). Ignored for other formats.
     pub jpeg_quality: u8,
 }
 
-/// Charge le fichier source (RAW ou standard) en une DynamicImage RGB,
-/// à pleine résolution, sans recadrage.
+/// Loads the source file (RAW or standard) into an RGB DynamicImage, at
+/// full resolution, without cropping.
 fn load_source(path: &Path, detected: &DetectedFormat, target: TargetFormat) -> Result<DynamicImage, String> {
     match detected {
         DetectedFormat::Raw(_) => {
-            // PNG/TIFF profitent de la profondeur 16 bits ; les formats de
-            // sortie 8 bits (JPEG/BMP/WebP) n'en ont pas besoin.
+            // PNG/TIFF benefit from 16-bit depth; the 8-bit output formats
+            // (JPEG/BMP/WebP) do not need it.
             if matches!(target, TargetFormat::Png | TargetFormat::Tiff) {
                 let d = crate::raw::decode_16bit(path)?;
                 let buf: ImageBuffer<Rgb<u16>, Vec<u16>> =
@@ -68,9 +67,9 @@ fn load_source(path: &Path, detected: &DetectedFormat, target: TargetFormat) -> 
             }
         }
         DetectedFormat::Standard(_) | DetectedFormat::Unknown => {
-            // On laisse `image` deviner/décoder ; ça couvre aussi le cas où
-            // la détection par contenu avait échoué mais où le fichier est
-            // en fait un format standard lisible.
+            // Let `image` guess/decode; this also covers the case where detection
+            // by content failed but the file is in fact a readable standard
+            // format.
             image::open(path).map_err(|e| format!("decoding failed: {e}"))
         }
     }
@@ -82,10 +81,10 @@ fn encode_target(img: &DynamicImage, output: &Path, opts: &ConvertOptions) -> Re
 
     match opts.target {
         TargetFormat::Jpeg => {
-            // JPEG ne supporte ni l'alpha ni 16 bits : on aplatit en RGB8.
-            // Qualité maximale par défaut pour minimiser la perte propre
-            // au format (JPEG reste fondamentalement destructif, quel que
-            // soit le réglage de qualité).
+            // JPEG supports neither alpha nor 16 bits: flatten to RGB8.
+            // Maximum quality by default to minimize the loss inherent to the
+            // format (JPEG remains fundamentally destructive, whatever the
+            // quality setting).
             let rgb = img.to_rgb8();
             rgb.write_to(&mut w, ImageOutputFormat::Jpeg(opts.jpeg_quality))
                 .map_err(|e| format!("JPEG encoding failed: {e}"))
@@ -100,8 +99,8 @@ fn encode_target(img: &DynamicImage, output: &Path, opts: &ConvertOptions) -> Re
             .map_err(|e| format!("BMP encoding failed: {e}"))
         }
         TargetFormat::Webp => {
-            // `image` encode en WebP sans perte (VP8L) par défaut via ce
-            // chemin. WebP en 8 bits uniquement.
+            // `image` encodes WebP losslessly (VP8L) by default through this
+            // path. WebP in 8 bits only.
             if img.color().has_alpha() {
                 img.to_rgba8()
                     .write_to(&mut w, ImageOutputFormat::WebP)
@@ -111,23 +110,21 @@ fn encode_target(img: &DynamicImage, output: &Path, opts: &ConvertOptions) -> Re
             .map_err(|e| format!("WebP encoding failed: {e}"))
         }
         TargetFormat::Png => {
-            // PNG est intrinsèquement sans perte quel que soit le niveau de
-            // compression ; on conserve la profondeur (8/16 bits) et l'alpha
-            // d'origine tels que fournis par `img`.
+            // PNG is intrinsically lossless whatever the compression level; the
+            // original depth (8/16 bits) and alpha are kept as provided by `img`.
             img.write_to(&mut w, ImageOutputFormat::Png)
                 .map_err(|e| format!("PNG encoding failed: {e}"))
         }
         TargetFormat::Tiff => {
-            // TIFF non compressé : sans perte, rapide, profondeur/alpha
-            // d'origine conservés.
+            // Uncompressed TIFF: lossless, fast, original depth/alpha kept.
             img.write_to(&mut w, ImageOutputFormat::Tiff)
                 .map_err(|e| format!("TIFF encoding failed: {e}"))
         }
     }
 }
 
-/// Convertit un fichier source vers le dossier de sortie, avec le nom de
-/// base d'origine et la nouvelle extension. Retourne le chemin écrit.
+/// Converts a source file into the output folder, with the original base
+/// name and the new extension. Returns the path written.
 pub fn convert_one(
     input: &Path,
     output_dir: &Path,
@@ -136,7 +133,7 @@ pub fn convert_one(
 ) -> Result<std::path::PathBuf, String> {
     let detected = formats::detect(input);
     if let DetectedFormat::Unknown = detected {
-        return Err("format source non reconnu".to_string());
+        return Err("unrecognized source format".to_string());
     }
 
     let img = load_source(input, &detected, opts.target)?;

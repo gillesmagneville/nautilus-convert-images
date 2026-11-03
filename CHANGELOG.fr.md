@@ -25,6 +25,17 @@ changelog utilisent donc une date plutôt qu'un numéro de version.
   fichier du dépôt : les paquets ne l'embarquent pas. `README`, `CONTRIBUTING`
   et `ARCHITECTURE` y renvoient.
 
+### Modifié
+
+- **Commentaires du code source en anglais** : les commentaires et les
+  commentaires de documentation du moteur Rust, de l'IHM, de l'extension
+  Nautilus, des scripts de tests et de `Cargo.toml` sont maintenant en
+  anglais. Le programme ne change pas, à l'exception d'un message de
+  diagnostic du moteur (affiché dans le journal de la fenêtre) qui était
+  encore en français : `format source non reconnu` devient
+  `unrecognized source format`. Les textes affichés à l'utilisateur, et leurs
+  traductions, ne changent pas.
+
 ## 2026-11-01 — v1.3.5
 
 Version de maintenance : aucun changement fonctionnel (le moteur, l'extension

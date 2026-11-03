@@ -63,8 +63,8 @@ pub enum CollisionPolicy {
     Overwrite,
 }
 
-/// Énumère récursivement (ou non) les fichiers image plausibles à partir
-/// d'une liste de chemins (fichiers et/ou dossiers).
+/// Lists, recursively or not, the plausible image files found in a list
+/// of paths (files and/or folders).
 pub fn enumerate_images(paths: &[PathBuf], recursive: bool) -> Vec<PathBuf> {
     let mut out = Vec::new();
     for p in paths {
@@ -75,9 +75,8 @@ pub fn enumerate_images(paths: &[PathBuf], recursive: bool) -> Vec<PathBuf> {
 
 fn collect_from_path(path: &Path, recursive: bool, out: &mut Vec<PathBuf>) {
     if path.is_file() {
-        // Un fichier explicitement sélectionné est toujours pris en compte,
-        // même si son extension n'est pas reconnue (la détection par
-        // contenu tranchera).
+        // A file selected explicitly is always taken into account, even if its
+        // extension is not recognized (detection by content will decide).
         out.push(path.to_path_buf());
         return;
     }
