@@ -24,6 +24,16 @@ a date rather than a version number.
   receive fixes and what to expect. It is a file of the repository: the
   packages do not ship it. `README`, `CONTRIBUTING` and `ARCHITECTURE` point to it.
 
+### Changed
+
+- **Source code comments in English**: the comments and documentation
+  comments of the Rust engine, the GUI, the Nautilus extension, the test
+  scripts and `Cargo.toml` are now in English. The program does not change,
+  except for one diagnostic message of the engine (shown in the log of the
+  window) that was still in French: `format source non reconnu` is now
+  `unrecognized source format`. The texts shown to the user, and their
+  translations, are untouched.
+
 ## 2026-11-01 — v1.3.5
 
 Maintenance release: no functional change (the engine, the Nautilus

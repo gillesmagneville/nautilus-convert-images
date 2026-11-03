@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Vérifie, dans la vraie interface (GTK4), qu'une ligne très longue du journal
-passe à la ligne au lieu de déborder de la fenêtre. Imprime en JSON les
-mesures prises une fois la fenêtre affichée.
+Checks, in the real interface (GTK4), that a very long log line wraps
+instead of overflowing the window. Prints as JSON the measurements taken
+once the window is displayed.
 
-Il faut un écran : dans un environnement sans session graphique, lancer via
+A display is needed: in an environment without a graphical session, run via
 
-    xvfb-run -a -s "-screen 0 900x800x24" python3 tests/gui_log_wrap.py <dossier-d-images>
+    xvfb-run -a -s "-screen 0 900x800x24" python3 tests/gui_log_wrap.py <images-folder>
 
-Variable d'environnement utile (développement et tests) :
-    CONVERT_IMAGES_ENGINE     chemin du binaire convert-images-engine
+Useful environment variable (development and tests):
+    CONVERT_IMAGES_ENGINE     path of the convert-images-engine binary
 """
 
 import importlib.machinery
@@ -29,8 +29,8 @@ ROOT = Path(__file__).resolve().parent.parent
 GUI_PATH = ROOT / "nautilus-extension" / "convert-images-gui"
 WATCHDOG_SECONDS = 40
 
-# Un chemin sans espace (cas réel : aucun point de coupure naturel) suivi d'un
-# message long, puis une ligne courte qui doit rester intacte.
+# A path without spaces (real case: no natural break point) followed by a
+# long message, then a short line that must stay intact.
 LONG_PATH = "/home/user/Photos/" + "tres_long_nom_de_dossier_" * 12 + "IMG_0001.CR2"
 LONG_LINE = f"[ERROR] {LONG_PATH}: " + "failed to decode the image data " * 6 + "\n"
 SHORT_LINE = "[OK] a.jpg → b.png\n"
@@ -71,8 +71,8 @@ def main():
         return False
 
     def measure():
-        # Une exception dans un rappel GLib serait avalée : on la consigne pour
-        # que l'échec du test dise pourquoi au lieu d'attendre le délai de sécurité.
+        # An exception in a GLib callback would be swallowed: we log it so that
+        # the test failure says why instead of waiting for the safety timeout.
         try:
             win = state["win"]
             hadj = win.log_scroller.get_hadjustment()

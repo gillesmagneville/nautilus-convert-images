@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Tests de l'internationalisation (catalogues gettext, traduction des
-messages du moteur). À lancer depuis la racine du dépôt :
+Tests of internationalization (gettext catalogs, translation of the
+engine messages). To be run from the root of the repository:
 
     python3 -m unittest discover -s tests -v
 
-Les tests qui ont besoin des outils GNU gettext (msgfmt, xgettext) ou de
-PyGObject/GTK4 sont ignorés (« skipped ») quand ils sont absents.
+The tests that need the GNU gettext tools (msgfmt, xgettext) or
+PyGObject/GTK4 are skipped when these are missing.
 """
 
 import gettext
@@ -39,7 +39,7 @@ def _compile_all(outdir):
         )
 
 
-@unittest.skipUnless(shutil.which("msgfmt"), "msgfmt (paquet gettext) absent")
+@unittest.skipUnless(shutil.which("msgfmt"), "msgfmt (gettext package) missing")
 class CatalogTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -70,16 +70,16 @@ class CatalogTests(unittest.TestCase):
                 catalog = gettext.GNUTranslations(f)._catalog
             for key, msgstr in catalog.items():
                 if key == "":
-                    continue  # en-tête
+                    continue  # header
                 msgid = key[0] if isinstance(key, tuple) else key
                 self.assertEqual(
                     sorted(PLACEHOLDER.findall(msgid)),
                     sorted(PLACEHOLDER.findall(msgstr)),
-                    f"{lang}: champs différents pour {msgid!r}",
+                    f"{lang}: different fields for {msgid!r}",
                 )
 
 
-@unittest.skipUnless(shutil.which("xgettext"), "xgettext (paquet gettext) absent")
+@unittest.skipUnless(shutil.which("xgettext"), "xgettext (gettext package) missing")
 class TemplateFreshnessTests(unittest.TestCase):
     def test_pot_is_up_to_date_with_the_code(self):
         with tempfile.TemporaryDirectory() as d:
@@ -99,24 +99,24 @@ class TemplateFreshnessTests(unittest.TestCase):
 
             self.assertEqual(
                 msgids(fresh), msgids(PO_DIR / f"{DOMAIN}.pot"),
-                "po/nautilus-convert-images.pot est périmé : lancez ./po/update-po.sh",
+                "po/nautilus-convert-images.pot is out of date: run ./po/update-po.sh",
             )
 
 
 class EngineContractTests(unittest.TestCase):
-    """Les modèles de messages de l'IHM doivent exister dans le code Rust."""
+    """The message patterns of the UI must exist in the Rust code."""
 
     def test_every_template_is_emitted_by_the_engine(self):
         source = GUI.read_text(encoding="utf-8")
         m = re.search(r"ENGINE_MESSAGE_TEMPLATES = \[(.*?)\n\]", source, flags=re.S)
-        self.assertIsNotNone(m, "liste ENGINE_MESSAGE_TEMPLATES introuvable")
+        self.assertIsNotNone(m, "ENGINE_MESSAGE_TEMPLATES list not found")
         templates = eval("[" + m.group(1) + "]", {"N_": lambda s: s})
         rust = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "src").glob("*.rs"))
         self.assertGreaterEqual(len(templates), 10)
         for template in templates:
             chunks = [c for c in PLACEHOLDER.split(template)[::2] if c.strip()]
             longest = max(chunks, key=len)
-            self.assertIn(longest, rust, f"modèle sans équivalent dans src/*.rs : {template!r}")
+            self.assertIn(longest, rust, f"pattern with no equivalent in src/*.rs: {template!r}")
 
 
 _PROBE = r"""
@@ -152,8 +152,8 @@ def _gtk_available():
     return r.returncode == 0
 
 
-@unittest.skipUnless(shutil.which("msgfmt"), "msgfmt (paquet gettext) absent")
-@unittest.skipUnless(_gtk_available(), "PyGObject + GTK4 indisponibles pour cet interpréteur")
+@unittest.skipUnless(shutil.which("msgfmt"), "msgfmt (gettext package) missing")
+@unittest.skipUnless(_gtk_available(), "PyGObject + GTK4 unavailable for this interpreter")
 class RuntimeTranslationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -184,7 +184,7 @@ class RuntimeTranslationTests(unittest.TestCase):
         self.assertEqual(r["internal"], "rawloader : erreur interne du décodeur (fichier corrompu ?)")
         self.assertEqual(r["label_unknown"], "Inconnu")
         self.assertEqual(r["label_raw"], "RAW Sony (ARW)")
-        # français : 0 et 1 au singulier
+        # French: 0 and 1 are singular
         self.assertIn("fichier détecté", r["plural0"])
         self.assertIn("fichier détecté", r["plural1"])
         self.assertIn("fichiers détectés", r["plural2"])
@@ -194,7 +194,7 @@ class RuntimeTranslationTests(unittest.TestCase):
         de, es = self.probe("de"), self.probe("es")
         self.assertEqual(de["enc"], "PNG-Kodierung fehlgeschlagen: disk full")
         self.assertEqual(de["plural1"], "{n} Datei erkannt: {details}")
-        self.assertEqual(de["plural0"], "{n} Dateien erkannt: {details}")  # allemand : 0 au pluriel
+        self.assertEqual(de["plural0"], "{n} Dateien erkannt: {details}")  # German: 0 is plural
         self.assertEqual(es["enc"], "error al codificar en PNG: disk full")
         self.assertEqual(es["plural2"], "{n} archivos detectados: {details}")
 
@@ -227,20 +227,20 @@ def _find_engine():
     return None
 
 
-@unittest.skipUnless(shutil.which("msgfmt"), "msgfmt (paquet gettext) absent")
-@unittest.skipUnless(shutil.which("xvfb-run"), "xvfb-run (paquet xvfb) absent")
-@unittest.skipUnless(shutil.which("convert") or shutil.which("magick"), "ImageMagick absent")
-@unittest.skipUnless(_gtk_available(), "PyGObject + GTK4 indisponibles pour cet interpréteur")
-@unittest.skipUnless(_find_engine(), "binaire convert-images-engine introuvable (cargo build --release)")
+@unittest.skipUnless(shutil.which("msgfmt"), "msgfmt (gettext package) missing")
+@unittest.skipUnless(shutil.which("xvfb-run"), "xvfb-run (xvfb package) missing")
+@unittest.skipUnless(shutil.which("convert") or shutil.which("magick"), "ImageMagick missing")
+@unittest.skipUnless(_gtk_available(), "PyGObject + GTK4 unavailable for this interpreter")
+@unittest.skipUnless(_find_engine(), "convert-images-engine binary not found (cargo build --release)")
 class GuiSmokeTests(unittest.TestCase):
-    """Lance la vraie interface (sous Xvfb) avec le vrai moteur, dans chaque langue."""
+    """Runs the real interface (under Xvfb) with the real engine, in each language."""
 
     EXPECTED = {
         "en": ("Convert images", "Convert", "Quit", "[ERROR]", "Finished"),
         "fr": ("Convertir les images", "Convertir", "Quitter", "[ERREUR]", "Terminé"),
         "es": ("Convertir imágenes", "Convertir", "Salir", "[ERROR]", "Finalizado"),
         "de": ("Bilder konvertieren", "Konvertieren", "Beenden", "[FEHLER]", "Fertig"),
-        "it": ("Convert images", "Convert", "Quit", "[ERROR]", "Finished"),  # repli anglais
+        "it": ("Convert images", "Convert", "Quit", "[ERROR]", "Finished"),  # English fallback
     }
 
     @classmethod
@@ -259,7 +259,7 @@ class GuiSmokeTests(unittest.TestCase):
         for name, grad in (("a.jpg", "red-blue"), ("b.png", "green-yellow")):
             subprocess.run([im, "-size", "64x48", f"gradient:{grad}", os.path.join(folder, name)], check=True)
         with open(os.path.join(folder, "bad.arw"), "wb") as f:
-            f.write(os.urandom(2048))  # faux RAW : doit produire une erreur traduite
+            f.write(os.urandom(2048))  # fake RAW: must produce a translated error
 
     def run_gui(self, language):
         samples = os.path.join(self.tmp, f"samples-{language}")
@@ -273,7 +273,7 @@ class GuiSmokeTests(unittest.TestCase):
             capture_output=True, text=True, env=env, timeout=120,
         )
         lines = [ln for ln in r.stdout.splitlines() if ln.strip().startswith("{")]
-        self.assertTrue(lines, f"pas de résultat JSON\nstdout={r.stdout}\nstderr={r.stderr}")
+        self.assertTrue(lines, f"no JSON result\nstdout={r.stdout}\nstderr={r.stderr}")
         result = json.loads(lines[-1])
         self.assertEqual(result["stage"], "converted", result)
         return result
@@ -287,7 +287,7 @@ class GuiSmokeTests(unittest.TestCase):
                 self.assertEqual(r["quit_button"], quit_)
                 self.assertIn(error_tag, r["log"])
                 self.assertIn(finished, r["log"])
-                self.assertIn("a (1).jpg", r["log"])  # collision « renommer » par défaut
+                self.assertIn("a (1).jpg", r["log"])  # "rename" collision by default
                 self.assertEqual(len(r["format_choices"]), 5)
                 self.assertEqual(len(r["collision_choices"]), 3)
 
@@ -298,7 +298,7 @@ import gi
 gi.require_version("GObject", "2.0")
 from gi.repository import GObject
 
-# Faux module Nautilus : le vrai n'existe que dans le processus Nautilus.
+# Fake Nautilus module: the real one only exists inside the Nautilus process.
 class _MenuItem:
     def __init__(self, name, label, tip):
         self.name, self.label, self.tip = name, label, tip
@@ -320,10 +320,10 @@ print(json.dumps({"label": item.label, "tip": item.tip}, ensure_ascii=False))
 """
 
 
-@unittest.skipUnless(shutil.which("msgfmt"), "msgfmt (paquet gettext) absent")
-@unittest.skipUnless(_gtk_available(), "PyGObject + GTK4 indisponibles pour cet interpréteur")
+@unittest.skipUnless(shutil.which("msgfmt"), "msgfmt (gettext package) missing")
+@unittest.skipUnless(_gtk_available(), "PyGObject + GTK4 unavailable for this interpreter")
 class NautilusExtensionTests(unittest.TestCase):
-    """L'entrée du menu contextuel de Nautilus doit suivre la langue."""
+    """The Nautilus context menu entry must follow the language."""
 
     EXT = ROOT / "nautilus-extension" / "convert_images_nautilus.py"
     EXPECTED = {
@@ -331,7 +331,7 @@ class NautilusExtensionTests(unittest.TestCase):
         "fr": "Convertir les images…",
         "es": "Convertir imágenes…",
         "de": "Bilder konvertieren …",
-        "it": "Convert images…",  # repli anglais
+        "it": "Convert images…",  # English fallback
     }
 
     @classmethod
@@ -360,9 +360,9 @@ class DesktopFileTests(unittest.TestCase):
     def test_desktop_entry_has_all_languages(self):
         text = (ROOT / "packaging" / "nautilus-convert-images.desktop").read_text(encoding="utf-8")
         for key in ("Name", "GenericName", "Comment"):
-            self.assertRegex(text, rf"(?m)^{key}=.+$", f"{key} par défaut (anglais) manquant")
+            self.assertRegex(text, rf"(?m)^{key}=.+$", f"default (English) {key} missing")
             for lang in ("fr", "es", "de"):
-                self.assertRegex(text, rf"(?m)^{key}\[{lang}\]=.+$", f"{key}[{lang}] manquant")
+                self.assertRegex(text, rf"(?m)^{key}\[{lang}\]=.+$", f"{key}[{lang}] missing")
 
 
 if __name__ == "__main__":

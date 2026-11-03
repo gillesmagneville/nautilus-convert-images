@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-convert-images-gui — interface graphique GTK4 autonome pour nautilus-convert-images.
+convert-images-gui — standalone GTK4 graphical interface for nautilus-convert-images.
 
-Lancée par l'extension Nautilus (ou manuellement) avec une liste de
-fichiers/dossiers sélectionnés, cette application :
-  1. détecte le format de toutes les images trouvées (récursivement dans
-     les dossiers sélectionnés), en déléguant au moteur `convert-images-engine` ;
-  2. propose un format de destination, une qualité (JPEG), un dossier de
-     sortie (avec création de nouveau dossier) et une politique en cas de
-     collision de noms ;
-  3. lance la conversion via `convert-images-engine` et affiche la progression
-     en temps réel, sans jamais recadrer ni redimensionner les images.
+Launched by the Nautilus extension (or manually) with a list of selected
+files/folders, this application:
+  1. detects the format of all the images found (recursively in the
+     selected folders), delegating to the `convert-images-engine` engine;
+  2. offers a destination format, a quality (JPEG), an output folder
+     (with creation of a new folder) and a policy for file name
+     collisions;
+  3. runs the conversion through `convert-images-engine` and shows the
+     progress in real time, never cropping or resizing the images.
 """
 
 import argparse
@@ -26,14 +26,14 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gio, GLib, Gtk  # noqa: E402
 
-# CONVERT_IMAGES_ENGINE et CONVERT_IMAGES_LOCALEDIR ne servent qu'au
-# développement et aux tests (moteur ou catalogues non installés).
+# CONVERT_IMAGES_ENGINE and CONVERT_IMAGES_LOCALEDIR are only used for
+# development and tests (engine or catalogs not installed).
 ENGINE_BINARY = os.environ.get("CONVERT_IMAGES_ENGINE", "/usr/bin/convert-images-engine")
 
-# --- Internationalisation (gettext) ------------------------------------
-# Textes sources en anglais ; la langue est choisie d'après l'environnement
-# (LANGUAGE, LC_ALL, LC_MESSAGES, LANG). Sans traduction disponible pour la
-# langue de l'utilisateur, l'anglais s'affiche.
+# --- Internationalization (gettext) -------------------------------------
+# Source texts in English; the language is chosen from the environment
+# (LANGUAGE, LC_ALL, LC_MESSAGES, LANG). Without a translation available for
+# the user's language, English is displayed.
 I18N_DOMAIN = "nautilus-convert-images"
 LOCALE_DIR = os.environ.get("CONVERT_IMAGES_LOCALEDIR", "/usr/share/locale")
 _translation = gettext.translation(I18N_DOMAIN, localedir=LOCALE_DIR, fallback=True)
@@ -42,8 +42,8 @@ ngettext = _translation.ngettext
 
 
 def N_(msgid):
-    """Marque une chaîne pour l'extraction (xgettext) sans la traduire tout
-    de suite : la traduction se fait à l'affichage."""
+    """Marks a string for extraction (xgettext) without translating it right
+    away: the translation happens at display time."""
     return msgid
 
 
@@ -61,17 +61,17 @@ COLLISION_CHOICES = [
     ("overwrite", N_("Replace the existing file")),
 ]
 
-# Libellés de format émis par le moteur qui ne sont pas des noms propres.
+# Format labels emitted by the engine that are not proper names.
 FORMAT_LABELS = {
     "Unknown": N_("Unknown"),
     "Generic RAW": N_("Generic RAW"),
 }
 
-# Messages d'erreur du moteur. Contrat : le moteur les émet en anglais (voir
-# ARCHITECTURE.md) ; l'IHM les traduit. Chaque modèle sert à la fois de
-# motif de reconnaissance et de msgid : un message inconnu s'affiche tel
-# quel. Garder ces modèles synchronisés avec src/*.rs (tests/test_i18n.py
-# le vérifie).
+# Engine error messages. Contract: the engine emits them in English (see
+# ARCHITECTURE.md); the UI translates them. Each pattern serves both as a
+# recognition pattern and as a msgid: an unknown message is displayed as
+# is. Keep these patterns in sync with src/*.rs (tests/test_i18n.py
+# checks it).
 ENGINE_MESSAGE_TEMPLATES = [
     # TRANSLATORS: {primary} is the error of the main RAW decoder and {fallback}
     # the error of LibRaw, the backup decoder tried afterwards.
@@ -105,9 +105,9 @@ _ENGINE_PATTERNS = [(_template_regex(t), t) for t in ENGINE_MESSAGE_TEMPLATES]
 
 
 def translate_engine_message(message):
-    """Traduit un message d'erreur du moteur s'il correspond à un modèle
-    connu (les parties variables, comme le détail d'une bibliothèque, sont
-    conservées telles quelles) ; sinon le renvoie inchangé."""
+    """Translates an engine error message if it matches a known pattern
+    (the variable parts, such as a library's detail, are kept as they
+    are); otherwise returns it unchanged."""
     if not isinstance(message, str):
         return message
     for rx, template in _ENGINE_PATTERNS:
@@ -117,7 +117,7 @@ def translate_engine_message(message):
             try:
                 return _(template).format(**fields)
             except (KeyError, IndexError, ValueError):
-                return message  # traduction mal formée : on garde l'anglais
+                return message  # malformed translation: keep the English
     return message
 
 
@@ -149,7 +149,7 @@ def common_parent_dir(paths):
 
 
 class NewFolderDialog(Gtk.Window):
-    """Petite fenêtre modale pour saisir le nom d'un nouveau dossier."""
+    """Small modal window to enter the name of a new folder."""
 
     def __init__(self, parent, parent_dir, on_created):
         super().__init__(title=_("New folder"), transient_for=parent, modal=True)
@@ -210,7 +210,7 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         super().__init__(application=app, title=_("Convert images"))
         self.set_default_size(560, 640)
         self.input_paths = input_paths
-        self.detected_files = []  # liste de (path, format_label, is_raw)
+        self.detected_files = []  # list of (path, format_label, is_raw)
         self.output_dir = common_parent_dir(input_paths)
         self.convert_proc = None
         self.conversion_in_progress = False
@@ -231,7 +231,7 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.detect_progress.set_show_text(False)
         root.append(self.detect_progress)
 
-        # --- Options de conversion (masquées jusqu'à la fin de l'analyse) ---
+        # --- Conversion options (hidden until the analysis is finished) ---
         self.options_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         self.options_box.set_visible(False)
         root.append(self.options_box)
@@ -243,7 +243,7 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.format_dropdown = Gtk.DropDown.new_from_strings(
             [_(label) for _id, label in FORMAT_CHOICES]
         )
-        self.format_dropdown.set_selected(0)  # JPEG par défaut
+        self.format_dropdown.set_selected(0)  # JPEG by default
         self.format_dropdown.connect("notify::selected", self._on_format_changed)
         grid.attach(self.format_dropdown, 1, 0, 1, 1)
 
@@ -278,8 +278,8 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
 
         self._on_format_changed(self.format_dropdown, None)
 
-        # --- Barre d'actions : Annuler/Convertir (masquée avec le reste des
-        # options jusqu'à la fin de la détection) ---
+        # --- Action bar: Cancel/Convert (hidden with the rest of the
+        # options until the detection is finished) ---
         action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         action_box.set_halign(Gtk.Align.END)
         self.cancel_btn = Gtk.Button(label=_("Cancel conversion"))
@@ -296,11 +296,11 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.convert_progress.set_visible(False)
         self.options_box.append(self.convert_progress)
 
-        # --- Journal ---
+        # --- Log ---
         self.log_buffer = Gtk.TextBuffer()
-        # Retour à la ligne : un chemin ou un message d'erreur long ne doit pas
-        # sortir de la fenêtre. WORD_CHAR coupe aux espaces quand c'est possible
-        # et, à défaut (un chemin n'a pas d'espaces), au caractère.
+        # Line wrapping: a long path or error message must not run off the
+        # window. WORD_CHAR breaks at spaces when possible and, failing that (a
+        # path has no spaces), at the character.
         self.log_view = Gtk.TextView(
             buffer=self.log_buffer,
             editable=False,
@@ -320,7 +320,7 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.open_dest_btn.connect("clicked", self._on_open_dest_clicked)
         root.append(self.open_dest_btn)
 
-        # --- Quitter : toujours visible, même pendant la détection ---
+        # --- Quit: always visible, even during the detection ---
         quit_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.quit_btn = Gtk.Button(label=_("Quit"))
         self.quit_btn.connect("clicked", self._on_quit_clicked)
@@ -500,10 +500,9 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self._request_quit()
 
     def _on_close_request(self, _window):
-        """Appelé quand l'utilisateur clique sur la croix de fermeture de
-        la fenêtre. Retourne True pour bloquer la fermeture immédiate
-        (le dialogue de confirmation décidera ensuite), False pour la
-        laisser se faire normalement."""
+        """Called when the user clicks the window's close button.
+        Returns True to block the immediate close (the confirmation dialog
+        will then decide), False to let it happen normally."""
         if self.conversion_in_progress:
             self._confirm_quit_dialog()
             return True
@@ -548,9 +547,9 @@ class ConvertImagesWindow(Gtk.ApplicationWindow):
         self.log_buffer.insert(end, text)
 
     def _run_streaming(self, args, on_line, on_done):
-        """Lance `args` en sous-processus et appelle `on_line(dict_json)`
-        pour chaque ligne JSON reçue sur stdout, puis `on_done(success, code)`
-        à la fin, sans jamais bloquer la boucle GTK."""
+        """Runs `args` as a subprocess and calls `on_line(json_dict)` for
+        each JSON line received on stdout, then `on_done(success, code)` at
+        the end, never blocking the GTK main loop."""
         try:
             proc = Gio.Subprocess.new(
                 args, Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE

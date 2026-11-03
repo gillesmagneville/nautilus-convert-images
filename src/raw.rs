@@ -1,17 +1,17 @@
-//! Décodage des fichiers RAW en image RGB pleine résolution, sans
-//! recadrage ni redimensionnement.
+//! Decoding of RAW files into a full-resolution RGB image, without
+//! cropping or resizing.
 //!
-//! `imagepipe` (basé sur `rawloader`) applique le pipeline standard
-//! (dématriçage, balance des blancs telle qu'enregistrée par l'appareil,
-//! conversion couleur, gamma) sans jamais recadrer ni réduire la
-//! résolution tant que `maxwidth`/`maxheight` restent à 0 et qu'aucune
-//! opération de recadrage n'est ajoutée — ce que ce module garantit en
-//! utilisant le pipeline par défaut sans le modifier.
+//! `imagepipe` (based on `rawloader`) applies the standard pipeline
+//! (demosaicing, white balance as recorded by the camera, color
+//! conversion, gamma) without ever cropping or reducing the resolution
+//! as long as `maxwidth`/`maxheight` stay at 0 and no crop operation is
+//! added — which this module guarantees by using the default pipeline
+//! without modifying it.
 //!
-//! Ordre de décodage : `rawloader`/`imagepipe` d'abord ; si le fichier ne
-//! peut pas être décodé (typiquement un boîtier absent de la base de
-//! `rawloader`), repli sur LibRaw (`libraw.rs`) ; si LibRaw échoue aussi,
-//! l'erreur combinée est remontée et le lot continue avec le fichier suivant.
+//! Decoding order: `rawloader`/`imagepipe` first; if the file cannot be
+//! decoded (typically a camera missing from the `rawloader` database),
+//! fall back to LibRaw (`libraw.rs`); if LibRaw fails too, the combined
+//! error is reported and the batch goes on with the next file.
 
 use std::path::Path;
 
@@ -31,27 +31,27 @@ pub struct DecodedRaw16 {
 
 fn new_pipeline(path: &Path) -> Result<imagepipe::Pipeline, String> {
     let mut pipeline = imagepipe::Pipeline::new_from_file(path).map_err(|e| {
-        // imagepipe masque la vraie cause : il essaie rawloader, puis
-        // image::open, et renvoie un message générique si les deux échouent.
-        // On refait donc l'appel à rawloader pour remonter son erreur réelle
-        // (boîtier non pris en charge, compression non gérée, etc.).
+        // imagepipe hides the real cause: it tries rawloader, then
+        // image::open, and returns a generic message if both fail.
+        // So we call rawloader again to bring up its real error
+        // (unsupported camera, unhandled compression, etc.).
         match rawloader::decode_file(path) {
             Err(raw_err) => format!("cannot open RAW file: {raw_err}"),
             Ok(_) => format!("cannot open RAW file: {e}"),
         }
     })?;
-    // Résolution pleine, aucune limite -> aucun redimensionnement.
+    // Full resolution, no limit -> no resizing.
     pipeline.globals.settings.maxwidth = 0;
     pipeline.globals.settings.maxheight = 0;
-    // pipeline.ops.rotatecrop reste à sa valeur par défaut (no-op) : pas de
-    // recadrage ajouté au-delà de la zone active du capteur gérée par
-    // rawloader/imagepipe lui-même (identique à ce que produirait
-    // l'appareil photo).
+    // pipeline.ops.rotatecrop stays at its default value (no-op): no
+    // crop added beyond the active area of the sensor handled by
+    // rawloader/imagepipe itself (identical to what the camera
+    // would produce).
     Ok(pipeline)
 }
 
-/// Exécute un décodeur en transformant une panique interne (fichier
-/// corrompu, bug de bibliothèque) en erreur, pour que le lot continue.
+/// Runs a decoder, turning an internal panic (corrupted file, library
+/// bug) into an error, so that the batch goes on.
 fn guarded<T>(name: &str, f: impl FnOnce() -> Result<T, String>) -> Result<T, String> {
     match std::panic::catch_unwind(std::panic::AssertUnwindSafe(f)) {
         Ok(r) => r,
@@ -59,17 +59,17 @@ fn guarded<T>(name: &str, f: impl FnOnce() -> Result<T, String>) -> Result<T, St
     }
 }
 
-/// Combine l'erreur du décodeur principal et celle du repli LibRaw.
+/// Combines the error of the main decoder and that of the LibRaw fallback.
 fn combined(primary: String, fallback: String) -> String {
-    // Les messages de rawloader contiennent des retours à la ligne : on les
-    // aplatit pour que l'erreur reste lisible sur une ligne du journal.
+    // rawloader messages contain line breaks: we flatten them so that the
+    // error stays readable on a single line of the log.
     let flat = |s: String| s.split_whitespace().collect::<Vec<_>>().join(" ");
     format!("{} ; LibRaw fallback: {}", flat(primary), flat(fallback))
 }
 
-/// Essaie `primary` ; s'il échoue, essaie `fallback` ; si les deux
-/// échouent, remonte les deux erreurs (le lot continue avec le fichier
-/// suivant, c'est l'appelant qui affiche l'erreur).
+/// Tries `primary`; if it fails, tries `fallback`; if both fail, reports
+/// both errors (the batch goes on with the next file; the caller displays
+/// the error).
 fn with_fallback<T>(
     primary: impl FnOnce() -> Result<T, String>,
     fallback: impl FnOnce() -> Result<T, String>,
@@ -80,8 +80,8 @@ fn with_fallback<T>(
     }
 }
 
-/// Décode un fichier RAW en RGB 8 bits par canal, pleine résolution.
-/// Adapté aux formats de sortie 8 bits (JPEG, BMP, WebP).
+/// Decodes a RAW file into RGB at 8 bits per channel, full resolution.
+/// Suited to 8-bit output formats (JPEG, BMP, WebP).
 pub fn decode_8bit(path: &Path) -> Result<DecodedRaw8, String> {
     with_fallback(
         || guarded("rawloader", || decode_8bit_rawloader(path)),
@@ -89,8 +89,8 @@ pub fn decode_8bit(path: &Path) -> Result<DecodedRaw8, String> {
     )
 }
 
-/// Décode un fichier RAW en RGB 16 bits par canal, pleine résolution.
-/// Adapté aux formats de sortie sans perte à profondeur étendue (TIFF, PNG).
+/// Decodes a RAW file into RGB at 16 bits per channel, full resolution.
+/// Suited to lossless output formats with extended depth (TIFF, PNG).
 pub fn decode_16bit(path: &Path) -> Result<DecodedRaw16, String> {
     with_fallback(
         || guarded("rawloader", || decode_16bit_rawloader(path)),
@@ -122,8 +122,8 @@ fn decode_16bit_rawloader(path: &Path) -> Result<DecodedRaw16, String> {
     })
 }
 
-/// Test uniquement : simule un décodeur principal en échec (boîtier
-/// inconnu) pour vérifier que le repli LibRaw prend bien le relais.
+/// Test only: simulates a failing main decoder (unknown camera) to check
+/// that the LibRaw fallback does take over.
 #[cfg(test)]
 pub fn decode_with_fallback_for_tests(path: &Path) -> Result<DecodedRaw8, String> {
     with_fallback(
@@ -139,27 +139,27 @@ mod tests {
     #[test]
     fn primary_ok_fallback_not_called() {
         let r: Result<u8, String> =
-            with_fallback(|| Ok(1), || panic!("le repli ne doit pas être appelé"));
+            with_fallback(|| Ok(1), || panic!("the fallback must not be called"));
         assert_eq!(r, Ok(1));
     }
 
     #[test]
     fn primary_fails_fallback_used() {
-        let r: Result<u8, String> = with_fallback(|| Err("boîtier inconnu".into()), || Ok(2));
+        let r: Result<u8, String> = with_fallback(|| Err("unknown camera".into()), || Ok(2));
         assert_eq!(r, Ok(2));
     }
 
     #[test]
     fn both_fail_errors_are_combined() {
         let r: Result<u8, String> =
-            with_fallback(|| Err("erreur A".into()), || Err("erreur B".into()));
+            with_fallback(|| Err("error A".into()), || Err("error B".into()));
         let msg = r.unwrap_err();
-        assert!(msg.contains("erreur A") && msg.contains("erreur B"), "{msg}");
+        assert!(msg.contains("error A") && msg.contains("error B"), "{msg}");
     }
 
     #[test]
     fn panic_becomes_an_error() {
-        let r: Result<u8, String> = guarded("test", || panic!("boum"));
+        let r: Result<u8, String> = guarded("test", || panic!("boom"));
         assert!(r.unwrap_err().contains("internal decoder error"));
     }
 
@@ -168,7 +168,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("cie-raw-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let f = dir.join("garbage.arw");
-        std::fs::write(&f, b"ceci n'est pas un fichier RAW").unwrap();
+        std::fs::write(&f, b"this is not a RAW file").unwrap();
         let msg = decode_8bit(&f).unwrap_err();
         assert!(msg.contains("LibRaw fallback"), "{msg}");
         let msg16 = decode_16bit(&f).unwrap_err();

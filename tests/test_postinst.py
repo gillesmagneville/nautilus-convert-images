@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """
-Tests du script post-installation (packaging/postinst) : le message affiché
-quand Nautilus est redémarré doit suivre la langue du système (anglais,
-français, espagnol, allemand ; repli sur l'anglais), avec les mêmes règles que
-gettext, donc que l'entrée de menu elle-même. À lancer depuis la racine du
-dépôt :
+Tests of the post-installation script (packaging/postinst): the message
+displayed when Nautilus is restarted must follow the system language
+(English, French, Spanish, German; fallback to English), with the same
+rules as gettext, hence as the menu entry itself. To be run from the root
+of the repository:
 
     python3 -m unittest discover -s tests -v
 
-Le script est exécuté avec un faux « nautilus » et un faux « pgrep » placés en
-tête du PATH : rien n'est redémarré pour de vrai.
+The script is run with a fake "nautilus" and a fake "pgrep" placed at the
+head of the PATH: nothing is really restarted.
 """
 
 import gettext
@@ -27,7 +27,7 @@ POSTINST = ROOT / "packaging" / "postinst"
 DOMAIN = "nautilus-convert-images"
 LANGS = ("fr", "es", "de")
 
-# Un fragment propre à chaque langue, pour reconnaître le message affiché.
+# A fragment specific to each language, to recognize the displayed message.
 MARKERS = {
     "en": "was restarted to enable the new menu entry",
     "fr": "a été redémarré pour activer la nouvelle entrée de menu",
@@ -35,8 +35,8 @@ MARKERS = {
     "de": "wurde neu gestartet, um den neuen Menüeintrag zu aktivieren",
 }
 
-# (variables d'environnement, langue attendue). Chaque cas est aussi comparé à
-# la recherche gettext réelle de Python (GettextEquivalenceTests).
+# (environment variables, expected language). Each case is also compared with
+# the real gettext lookup of Python (GettextEquivalenceTests).
 CASES = [
     ({}, "en"),
     ({"LANG": "en_US.UTF-8"}, "en"),
@@ -55,20 +55,20 @@ CASES = [
     ({"LANG": "de_AT.UTF-8"}, "de"),
     ({"LANG": "de_DE@euro"}, "de"),
     ({"LANG": "de_CH.ISO-8859-1"}, "de"),
-    # Langues sans catalogue : repli sur l'anglais.
+    # Languages without a catalog: fall back to English.
     ({"LANG": "it_IT.UTF-8"}, "en"),
     ({"LANG": "ja_JP.UTF-8"}, "en"),
     ({"LANG": "pt_BR.UTF-8"}, "en"),
     ({"LANG": "franglais"}, "en"),
     ({"LANG": "defaut"}, "en"),
-    # Ordre de priorité des variables.
+    # Priority order of the variables.
     ({"LC_ALL": "de_DE.UTF-8", "LANG": "fr_FR.UTF-8"}, "de"),
     ({"LC_ALL": "C", "LANG": "fr_FR.UTF-8"}, "en"),
     ({"LC_MESSAGES": "es_ES.UTF-8", "LANG": "fr_FR.UTF-8"}, "es"),
     ({"LC_ALL": "", "LC_MESSAGES": "", "LANG": "fr_FR.UTF-8"}, "fr"),
     ({"LANGUAGE": "de", "LC_ALL": "fr_FR.UTF-8"}, "de"),
     ({"LANGUAGE": "", "LANG": "es_ES.UTF-8"}, "es"),
-    # LANGUAGE : liste de langues, la première disponible gagne.
+    # LANGUAGE: list of languages, the first available one wins.
     ({"LANGUAGE": "de:fr", "LANG": "fr_FR.UTF-8"}, "de"),
     ({"LANGUAGE": "it:de", "LANG": "fr_FR.UTF-8"}, "de"),
     ({"LANGUAGE": "it:ja:es_ES:fr", "LANG": "en_US.UTF-8"}, "es"),
@@ -76,27 +76,27 @@ CASES = [
     ({"LANGUAGE": "en_US:en", "LANG": "en_US.UTF-8"}, "en"),
     ({"LANGUAGE": "it", "LANG": "fr_FR.UTF-8"}, "en"),
     ({"LANGUAGE": "it:ja", "LANG": "de_DE.UTF-8"}, "en"),
-    # « C » arrête la recherche dans la liste.
+    # "C" stops the search in the list.
     ({"LANGUAGE": "C:fr", "LANG": "fr_FR.UTF-8"}, "en"),
     ({"LANGUAGE": "it:C:de"}, "en"),
 ]
 
 
 def language_of(output):
-    """Langue du message affiché, ou None s'il n'est pas reconnu (ou ambigu)."""
+    """Language of the displayed message, or None if it is not recognized (or ambiguous)."""
     found = [lang for lang, marker in MARKERS.items() if marker in output]
     return found[0] if len(found) == 1 else None
 
 
 class PostinstRunner:
-    """Exécute le postinst avec de faux « nautilus » et « pgrep »."""
+    """Runs the postinst with fake "nautilus" and "pgrep"."""
 
     @classmethod
     def setUpClass(cls):
         cls.tmp = Path(tempfile.mkdtemp(prefix="cie-postinst-"))
         cls.log = cls.tmp / "calls.log"
         (cls.tmp / "home").mkdir()
-        # Le strict nécessaire du système, sans nautilus ni pgrep réels.
+        # The bare minimum of the system, without real nautilus or pgrep.
         cls.sysbin = cls.tmp / "sysbin"
         cls.sysbin.mkdir()
         for tool in ("sh", "dash", "bash", "echo", "cat", "env"):
@@ -114,7 +114,7 @@ class PostinstRunner:
 
     @classmethod
     def _make_bin(cls, name, pgrep_status, nautilus_status):
-        """pgrep répond avec le code donné ; nautilus (si présent) note ses appels."""
+        """pgrep answers with the given code; nautilus (if present) records its calls."""
         directory = cls.tmp / name
         directory.mkdir()
         (directory / "pgrep").write_text(f"#!/bin/sh\nexit {pgrep_status}\n")
@@ -127,7 +127,7 @@ class PostinstRunner:
         return directory
 
     def run_postinst(self, bin_dir, env=None, shell="/bin/sh", cwd=None):
-        """Retourne (processus terminé, liste des appels reçus par le faux nautilus)."""
+        """Returns (finished process, list of the calls received by the fake nautilus)."""
         merged = {"PATH": f"{bin_dir}:{self.sysbin}", "HOME": str(self.tmp / "home")}
         merged.update(env or {})
         if self.log.exists():
@@ -140,8 +140,8 @@ class PostinstRunner:
             text=True,
             encoding="utf-8",
         )
-        # bash (« sh » sous Fedora) se plaint lui-même quand la locale demandée
-        # n'est pas installée sur la machine : ce n'est pas le fait du script.
+        # bash ("sh" on Fedora) itself complains when the requested locale
+        # is not installed on the machine: this is not the script's doing.
         proc.stderr = "".join(
             line for line in proc.stderr.splitlines(keepends=True) if "setlocale" not in line
         )
@@ -185,7 +185,7 @@ class PostinstTests(PostinstRunner, unittest.TestCase):
         self.assertEqual(language_of(proc.stdout), "es")
 
     def test_works_with_posix_shells(self):
-        """Le script doit rester du sh POSIX (dpkg et rpm le lancent avec sh)."""
+        """The script must remain POSIX sh (dpkg and rpm run it with sh)."""
         shells = [s for s in ("/bin/sh", shutil.which("dash"), shutil.which("bash")) if s]
         for shell in dict.fromkeys(shells):
             for env, expected in (
@@ -199,7 +199,7 @@ class PostinstTests(PostinstRunner, unittest.TestCase):
                     self.assertEqual(language_of(proc.stdout), expected)
 
     def test_odd_language_values_do_not_break_it(self):
-        """Étoiles, espaces, « : » en trop : jamais d'erreur, toujours un message."""
+        """Stars, spaces, extra ":": never an error, always a message."""
         for value in ("*:fr", "fr *", "  :de", "::", "fr::de", "*"):
             with self.subTest(language=value):
                 proc, _ = self.run_postinst(self.bin_running, {"LANGUAGE": value})
@@ -208,7 +208,7 @@ class PostinstTests(PostinstRunner, unittest.TestCase):
                 self.assertIsNotNone(language_of(proc.stdout), proc.stdout)
 
     def test_wildcard_in_language_does_not_expand_to_files(self):
-        """« * » dans LANGUAGE ne doit pas être remplacé par les fichiers du dossier courant."""
+        """A "*" in LANGUAGE must not be replaced by the files of the current folder."""
         workdir = self.tmp / "workdir"
         workdir.mkdir()
         for name in ("de", "fr", "es"):
@@ -224,13 +224,13 @@ class PostinstTests(PostinstRunner, unittest.TestCase):
 
 
 def _write_empty_mo(path):
-    """Catalogue gettext vide mais valide : suffit à gettext.find()."""
+    """Empty but valid gettext catalog: enough for gettext.find()."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(struct.pack("<7I", 0x950412DE, 0, 0, 28, 28, 0, 28))
 
 
 class GettextEquivalenceTests(PostinstRunner, unittest.TestCase):
-    """Le postinst doit choisir la même langue que gettext pour le menu."""
+    """The postinst must choose the same language as gettext for the menu."""
 
     @classmethod
     def setUpClass(cls):
@@ -240,7 +240,7 @@ class GettextEquivalenceTests(PostinstRunner, unittest.TestCase):
             _write_empty_mo(cls.localedir / lang / "LC_MESSAGES" / f"{DOMAIN}.mo")
 
     def gettext_language(self, env):
-        """Langue que gettext (donc le menu) choisirait avec ces variables."""
+        """Language that gettext (hence the menu) would choose with these variables."""
         names = ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG")
         saved = {k: os.environ.get(k) for k in names}
         try:
@@ -263,7 +263,7 @@ class GettextEquivalenceTests(PostinstRunner, unittest.TestCase):
                 self.assertEqual(
                     language_of(proc.stdout),
                     self.gettext_language(env),
-                    f"postinst et gettext divergent pour {env}",
+                    f"postinst and gettext differ for {env}",
                 )
 
 
